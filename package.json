@@ -3,10 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=18.17.0"
+    "node": "18.x"
   },
   "scripts": {
-    "preinstall": "nvm use",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
