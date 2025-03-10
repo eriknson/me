@@ -5,8 +5,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Personal Website',
-  description: 'My personal website',
+  title: 'eriks.design',
+  description: 'Product Designer based out of Lisbon, Portugal. I work together with ambitious teams to create world-class user experiences.',
 }
 
 export default function RootLayout({
