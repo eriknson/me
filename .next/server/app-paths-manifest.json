@@ -1,5 +1,0 @@
-{
-  "/page": "app/page.js",
-  "/api/strava/route": "app/api/strava/route.js",
-  "/api/spotify/route": "app/api/spotify/route.js"
-}
