@@ -1,13 +1,11 @@
 # Personal Website
 
-A personal website built with Next.js, TypeScript, and Tailwind CSS. The site displays my latest activities from Strava and recently played tracks from Spotify.
+Built via Cursor with Next.js, TypeScript, and Tailwind CSS. The site displays my latest activities from Strava and recently played tracks from Spotify.
 
 ## Features
 
 - Real-time Strava activity feed
 - Spotify recently played tracks
-- Responsive design
-- Modern UI with Tailwind CSS
 - TypeScript for type safety
 
 ## Tech Stack
