@@ -28,7 +28,10 @@ export default function Home() {
   const lastSpawnTimeRef = useRef(0)
   
   // Maximum number of hearts to allow on screen for performance
-  const MAX_HEARTS = isMobile ? 60 : 100;
+  const MAX_HEARTS = isMobile ? 40 : 75; // Reduced for better performance
+  
+  // Initial pre-populated pool size
+  const INITIAL_POOL_SIZE = 20;
   
   // Check if device is mobile
   useEffect(() => {
@@ -50,6 +53,32 @@ export default function Home() {
 
   // Element pool for better performance - reuse elements instead of creating new ones
   const elementsPoolRef = useRef<HTMLDivElement[]>([]);
+  
+  // Pre-populate element pool to prevent lag during first interactions
+  useEffect(() => {
+    // Clear any existing pool
+    elementsPoolRef.current.forEach(element => {
+      if (element.parentNode) {
+        element.parentNode.removeChild(element);
+      }
+    });
+    
+    elementsPoolRef.current = [];
+    
+    // Create initial pool of elements
+    for (let i = 0; i < INITIAL_POOL_SIZE; i++) {
+      const element = document.createElement('div');
+      element.innerText = '💛'; // Yellow heart emoji
+      element.setAttribute('aria-hidden', 'true');
+      element.style.position = 'fixed';
+      element.style.zIndex = '50';
+      element.style.pointerEvents = 'none';
+      element.style.willChange = 'transform, opacity';
+      element.style.display = 'none'; // Initially hidden
+      document.body.appendChild(element);
+      elementsPoolRef.current.push(element);
+    }
+  }, []);
   
   // Get or create an element from the pool
   const getHeartElement = (): HTMLDivElement => {
@@ -83,18 +112,19 @@ export default function Home() {
   // Create heart element with optimized reuse
   const createHeart = (x: number, y: number) => {
     const id = heartIdRef.current++;
-    const size = isMobile ? 28 + Math.random() * 10 : 35 + Math.random() * 15; // Slightly larger for better visibility
+    const size = isMobile ? 28 + Math.random() * 10 : 35 + Math.random() * 15;
     const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 3;
+    const speed = 2 + Math.random() * 2; // Slightly reduced speed range
     const rotation = Math.random() * 360;
     
     // Get heart element from pool
     const element = getHeartElement();
-    element.style.left = `${x}px`;
-    element.style.top = `${y}px`;
+    
+    // Set initial properties all at once for better performance
+    const initialTransform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
     element.style.fontSize = `${size}px`;
-    element.style.transform = `rotate(${rotation}deg)`;
     element.style.opacity = '1';
+    element.style.transform = initialTransform;
     
     // Create heart object
     const heart: Heart = {
@@ -107,7 +137,7 @@ export default function Home() {
       element,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 2 : 3) // Lower initial boost on mobile
+        y: Math.sin(angle) * speed - (isMobile ? 1.5 : 2.5) // Reduced initial boost
       },
       created: Date.now()
     };
@@ -172,10 +202,8 @@ export default function Home() {
         heart.rotation += heart.velocity.x * (isMobile ? 0.1 : 0.2);
       }
       
-      // Update DOM element
-      heart.element.style.left = `${heart.x}px`;
-      heart.element.style.top = `${heart.y}px`;
-      heart.element.style.transform = `rotate(${heart.rotation}deg)`;
+      // Update DOM element using transform for better performance
+      heart.element.style.transform = `translate(${heart.x}px, ${heart.y}px) rotate(${heart.rotation}deg)`;
       
       updatedHearts.push(heart);
     }
@@ -184,11 +212,26 @@ export default function Home() {
     rafRef.current = requestAnimationFrame(updateHearts);
   };
   
+  // Staggered heart creation to reduce lag spikes
+  const staggeredHeartCreation = (x: number, y: number, count: number, currentIndex = 0) => {
+    if (currentIndex >= count) return;
+    
+    // Create one heart immediately
+    createHeart(x, y);
+    
+    // Schedule the next heart creation with a slight delay
+    if (currentIndex < count - 1) {
+      setTimeout(() => {
+        staggeredHeartCreation(x, y, count, currentIndex + 1);
+      }, isMobile ? 8 : 5); // Slight delay between creations
+    }
+  };
+  
   // Spawn hearts at position with throttling
   const spawnHearts = (x: number, y: number) => {
     const now = Date.now();
     // Throttle spawning on mobile to prevent performance issues
-    const spawnThrottle = isMobile ? 50 : 30; // ms between spawn calls
+    const spawnThrottle = isMobile ? 80 : 40; // Increased throttle time for better performance
     
     if (now - lastSpawnTimeRef.current < spawnThrottle) {
       return;
@@ -199,7 +242,11 @@ export default function Home() {
     // Limit total hearts for performance
     if (heartsRef.current.length >= MAX_HEARTS) {
       // Remove oldest hearts when at limit
-      const toRemove = heartsRef.current.length + (isMobile ? 5 : 8) - MAX_HEARTS;
+      const toRemove = Math.min(
+        heartsRef.current.length + (isMobile ? 3 : 5) - MAX_HEARTS,
+        10 // Cap removal to avoid performance hit from bulk removal
+      );
+      
       for (let i = 0; i < toRemove; i++) {
         if (heartsRef.current.length > 0) {
           const heart = heartsRef.current.shift()!;
@@ -209,10 +256,10 @@ export default function Home() {
     }
     
     // Spawn fewer hearts on mobile for performance
-    const count = isMobile ? 5 : 8;
-    for (let i = 0; i < count; i++) {
-      createHeart(x, y);
-    }
+    const count = isMobile ? 3 : 5; // Reduced count for better initial performance
+    
+    // Use staggered creation instead of all at once
+    staggeredHeartCreation(x, y, count);
   };
   
   // Handle drag events for continuous spawning
