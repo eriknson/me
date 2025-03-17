@@ -3,6 +3,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// Simple Heart interface for mobile (no physics)
+interface SimpleHeart {
+  id: number
+  x: number
+  y: number
+  createdAt: number
+}
+
+// Complex Heart interface for desktop
 interface Heart {
   id: number
   x: number
@@ -15,14 +24,11 @@ interface Heart {
 }
 
 // Configuration constants
-const HEART_SIZE = 40
+const HEART_LIFETIME = 3000
+const FADE_DURATION = 1000
 const SPAWN_RATE_DESKTOP = 24
-const SPAWN_RATE_MOBILE = 200 // Even slower for mobile
-const HEART_LIFETIME = 4000
-const FADE_DURATION = 4000
-const VELOCITY_THRESHOLD = 0.1
-const BATCH_UPDATE_MS = 16
-const MAX_HEARTS_MOBILE = 8 // Fewer hearts on mobile
+const SPAWN_RATE_MOBILE = 150
+const MAX_HEARTS_MOBILE = 12
 
 export default function Home() {
   const rafRef = useRef<number>()
@@ -31,6 +37,7 @@ export default function Home() {
   const lastSpawnRef = useRef(0)
   
   const [hearts, setHearts] = useState<Heart[]>([])
+  const [simpleHearts, setSimpleHearts] = useState<SimpleHeart[]>([])
   const [isPressed, setIsPressed] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -47,49 +54,42 @@ export default function Home() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Fix for scrolling on main area only - don't disable all scrolling
-    const mainElement = document.querySelector('main');
-    if (mainElement) {
-      mainElement.style.overflow = 'hidden';
-      mainElement.style.touchAction = 'none';
-    }
-    
     return () => {
       window.removeEventListener('resize', checkMobile);
-      if (mainElement) {
-        mainElement.style.overflow = '';
-        mainElement.style.touchAction = '';
-      }
     };
   }, []);
 
-  const checkCollision = (x: number, y: number) => {
-    if (y >= window.innerHeight) {
-      return window.innerHeight;
-    }
-    return null;
-  }
-
+  // Desktop physics-based heart animation
   const createHeart = (x: number, y: number) => {
-    // Simpler physics for mobile
     const angle = Math.random() * Math.PI * 2
-    const speed = isMobile ? 0.7 : (1 + Math.random() * 2)
+    const speed = 1 + Math.random() * 2
     
     return {
       id: heartIdRef.current++,
       x,
       y,
-      scale: isMobile ? 0.6 + Math.random() * 0.3 : 0.8 + Math.random() * 0.4,
+      scale: 0.8 + Math.random() * 0.4,
       rotation: Math.random() * 360,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 0.5 : 2) // Much less initial velocity on mobile
+        y: Math.sin(angle) * speed - 2
       },
       settled: false,
       createdAt: Date.now()
     }
   }
 
+  // Mobile simple heart - no physics
+  const createSimpleHeart = (x: number, y: number): SimpleHeart => {
+    return {
+      id: heartIdRef.current++,
+      x,
+      y,
+      createdAt: Date.now()
+    }
+  }
+
+  // Spawn hearts based on device type
   const spawnHearts = useCallback((x: number, y: number) => {
     const now = performance.now()
     const spawnRate = isMobile ? SPAWN_RATE_MOBILE : SPAWN_RATE_DESKTOP
@@ -97,19 +97,36 @@ export default function Home() {
     if (now - lastSpawnRef.current < spawnRate) return
     lastSpawnRef.current = now
 
-    setHearts(prev => {
-      // On mobile, limit the number of hearts
-      if (isMobile && prev.length >= MAX_HEARTS_MOBILE) {
-        // Replace oldest heart with new one
-        const newHearts = [...prev]
-        newHearts.shift() // Remove oldest heart
-        return [...newHearts, createHeart(x, y)]
-      }
-      return [...prev, createHeart(x, y)]
-    })
+    if (isMobile) {
+      // Mobile: simple hearts with pre-defined CSS animations
+      setSimpleHearts(prev => {
+        if (prev.length >= MAX_HEARTS_MOBILE) {
+          const newHearts = [...prev]
+          newHearts.shift() // Remove oldest heart
+          return [...newHearts, createSimpleHeart(x, y)]
+        }
+        return [...prev, createSimpleHeart(x, y)]
+      })
+    } else {
+      // Desktop: physics-based hearts
+      setHearts(prev => [...prev, createHeart(x, y)])
+    }
   }, [isMobile])
 
+  // Physics update for desktop only
   const updatePhysics = useCallback(() => {
+    if (isMobile) {
+      // Clean up old simple hearts on mobile
+      const now = Date.now()
+      setSimpleHearts(prev => 
+        prev.filter(heart => now - heart.createdAt <= HEART_LIFETIME + FADE_DURATION)
+      )
+      
+      rafRef.current = requestAnimationFrame(updatePhysics)
+      return
+    }
+    
+    // Desktop physics simulation
     const now = Date.now()
     
     setHearts(prev => {
@@ -126,32 +143,31 @@ export default function Home() {
         const nextY = heart.y + heart.velocity.y
         const nextX = heart.x + heart.velocity.x
 
-        if (Math.abs(heart.velocity.x) < VELOCITY_THRESHOLD && 
-            Math.abs(heart.velocity.y) < VELOCITY_THRESHOLD) {
+        if (Math.abs(heart.velocity.x) < 0.1 && Math.abs(heart.velocity.y) < 0.1) {
           return { ...heart, settled: true }
         }
 
-        const collisionY = checkCollision(nextX, nextY)
-
-        if (collisionY !== null) {
+        // Check bottom collision
+        if (nextY >= window.innerHeight) {
           return {
             ...heart,
             x: nextX,
-            y: collisionY,
+            y: window.innerHeight,
             velocity: { x: 0, y: 0 },
             settled: true
           }
         }
 
+        // Bounce off walls
         let newVelocityX = heart.velocity.x
-        if (nextX < 0 || nextX > window.innerWidth - HEART_SIZE) {
+        if (nextX < 0 || nextX > window.innerWidth - 40) {
           newVelocityX = -heart.velocity.x * 0.3
         }
 
         updated = true
         return {
           ...heart,
-          x: nextX < 0 ? 0 : nextX > window.innerWidth - HEART_SIZE ? window.innerWidth - HEART_SIZE : nextX,
+          x: nextX < 0 ? 0 : nextX > window.innerWidth - 40 ? window.innerWidth - 40 : nextX,
           y: nextY,
           velocity: {
             x: newVelocityX * 0.98,
@@ -162,20 +178,16 @@ export default function Home() {
 
       return updated ? nextHearts : filtered
     })
-
-    // Use more optimized animation approach for mobile
-    const timeoutDuration = isMobile ? 64 : BATCH_UPDATE_MS // Even lower framerate on mobile
     
-    timeoutRef.current = setTimeout(() => {
-      rafRef.current = requestAnimationFrame(updatePhysics)
-    }, timeoutDuration)
+    rafRef.current = requestAnimationFrame(updatePhysics)
   }, [isMobile])
 
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isPressed) return
     
-    // Only prevent default on the main element, not affecting buttons
-    if (e.target && (e.target as Element).closest('main') && 
+    // Don't prevent default on buttons or links
+    if (e.target && 
+        (e.target as Element).closest('main') && 
         !(e.target as Element).closest('a') && 
         e.cancelable) {
       e.preventDefault()
@@ -188,8 +200,9 @@ export default function Home() {
 
   useEffect(() => {
     const handleStart = (e: MouseEvent | TouchEvent) => {
-      // Only prevent default on the main element, not affecting buttons
-      if (e.target && (e.target as Element).closest('main') && 
+      // Don't prevent default on buttons or links
+      if (e.target && 
+          (e.target as Element).closest('main') && 
           !(e.target as Element).closest('a') && 
           e.cancelable) {
         e.preventDefault()
@@ -201,7 +214,6 @@ export default function Home() {
 
     const handleEnd = () => setIsPressed(false)
 
-    // Passive false to allow preventDefault
     document.addEventListener('mousedown', handleStart)
     document.addEventListener('mousemove', handleMove)
     document.addEventListener('mouseup', handleEnd)
@@ -259,37 +271,96 @@ export default function Home() {
         </a>
       </div>
 
-      <AnimatePresence>
-        {hearts.map(heart => {
-          const age = Date.now() - heart.createdAt
-          const opacity = age > HEART_LIFETIME ? 
-            Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
+      {/* Desktop hearts with physics */}
+      {!isMobile && (
+        <AnimatePresence>
+          {hearts.map(heart => {
+            const age = Date.now() - heart.createdAt
+            const opacity = age > HEART_LIFETIME ? 
+              Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
 
-          // Smaller, more efficient heart rendering
-          const fontSize = isMobile ? "text-xl" : "text-3xl"
+            return (
+              <motion.div
+                key={heart.id}
+                className="fixed pointer-events-none text-3xl z-50 will-change-transform"
+                initial={{ 
+                  transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(0) rotate(${heart.rotation}deg)`,
+                  opacity: 0
+                }}
+                animate={{ 
+                  transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(${heart.scale}) rotate(${heart.rotation}deg)`,
+                  opacity
+                }}
+                transition={{ 
+                  transform: { type: "tween", duration: 0.1 },
+                  opacity: { duration: 0.3 }
+                }}
+              >
+                ❤️
+              </motion.div>
+            )
+          })}
+        </AnimatePresence>
+      )}
 
-          return (
-            <motion.div
-              key={heart.id}
-              className={`fixed pointer-events-none ${fontSize} z-50 will-change-transform`}
-              initial={{ 
-                transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(0) rotate(${heart.rotation}deg)`,
-                opacity: 0
-              }}
-              animate={{ 
-                transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(${heart.scale}) rotate(${heart.rotation}deg)`,
-                opacity
-              }}
-              transition={{ 
-                transform: { type: "tween", duration: isMobile ? 0.25 : 0.1 },
-                opacity: { duration: 0.3 }
-              }}
-            >
-              ❤️
-            </motion.div>
-          )
-        })}
-      </AnimatePresence>
+      {/* Mobile hearts with CSS animations */}
+      {isMobile && (
+        <div>
+          {simpleHearts.map(heart => {
+            const age = Date.now() - heart.createdAt
+            const opacity = age > HEART_LIFETIME ? 
+              Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
+            
+            // Create animation variation based on heart id
+            const animIndex = heart.id % 5
+            const animClass = `heart-anim-${animIndex}`
+            const scaleVar = 0.5 + (heart.id % 4) * 0.1
+            const rotateVar = (heart.id % 7) * 30
+            
+            return (
+              <div
+                key={heart.id}
+                className={`fixed pointer-events-none text-xl z-50 ${animClass}`}
+                style={{
+                  left: `${heart.x}px`,
+                  top: `${heart.y}px`,
+                  opacity,
+                  transform: `scale(${scaleVar}) rotate(${rotateVar}deg)`,
+                  animation: `float-${animIndex} 2s forwards`,
+                }}
+              >
+                ❤️
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* CSS animations for mobile hearts */}
+      {isMobile && (
+        <style jsx global>{`
+          @keyframes float-0 {
+            0% { transform: scale(0) translate(0, 0); }
+            100% { transform: scale(0.6) translate(0, 40px); }
+          }
+          @keyframes float-1 {
+            0% { transform: scale(0) translate(0, 0); }
+            100% { transform: scale(0.5) translate(-20px, 50px); }
+          }
+          @keyframes float-2 {
+            0% { transform: scale(0) translate(0, 0); }
+            100% { transform: scale(0.7) translate(20px, 50px); }
+          }
+          @keyframes float-3 {
+            0% { transform: scale(0) translate(0, 0); }
+            100% { transform: scale(0.5) translate(-10px, 60px); }
+          }
+          @keyframes float-4 {
+            0% { transform: scale(0) translate(0, 0); }
+            100% { transform: scale(0.6) translate(10px, 45px); }
+          }
+        `}</style>
+      )}
     </main>
   )
 } 
