@@ -37,10 +37,10 @@ export default function Home() {
   const cursorRef = useRef<HTMLDivElement>(null)
   
   // Maximum number of hearts to allow on screen for performance
-  const MAX_HEARTS = isMobile ? 25 : 50; // Significantly reduced for better performance
+  const MAX_HEARTS = isMobile ? 15 : 50; // Reduced for mobile for better performance
   
   // Initial pre-populated pool size
-  const INITIAL_POOL_SIZE = 20;
+  const INITIAL_POOL_SIZE = isMobile ? 10 : 20;
   
   // Check if device is mobile
   useEffect(() => {
@@ -151,9 +151,9 @@ export default function Home() {
   // Create heart element with optimized reuse
   const createHeart = (x: number, y: number) => {
     const id = heartIdRef.current++;
-    const size = isMobile ? 28 + Math.random() * 10 : 35 + Math.random() * 15;
+    const size = isMobile ? 24 + Math.random() * 8 : 35 + Math.random() * 15; // Smaller hearts on mobile for better performance
     const angle = Math.random() * Math.PI * 2;
-    const speed = 2 + Math.random() * 2; // Slightly reduced speed range
+    const speed = isMobile ? 3 + Math.random() * 2 : 2 + Math.random() * 2; // Increased initial speed on mobile
     const rotation = Math.random() * 360;
     
     // Get heart element from pool
@@ -177,7 +177,7 @@ export default function Home() {
       element,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 3.0 : 2.5) // Increased initial boost on mobile for faster movement
+        y: Math.sin(angle) * speed - (isMobile ? 5.0 : 2.5) // Much more initial boost on mobile for faster movement
       },
       created: Date.now()
     };
@@ -189,14 +189,14 @@ export default function Home() {
   // More efficient update with throttled calculations
   const updateHearts = () => {
     const now = Date.now();
-    const lifespan = isMobile ? 2500 : 5000; // Reduced lifespan on mobile for faster animations
-    const fadeTime = 500; // 0.5 second fade
+    const lifespan = isMobile ? 1500 : 5000; // Significantly reduced lifespan on mobile for snappier animations
+    const fadeTime = isMobile ? 300 : 500; // Shorter fade time on mobile
     
     // Filter and update hearts in one pass for better performance
     const updatedHearts: Heart[] = [];
     
-    // Update every other frame on mobile for better performance
-    if (isMobile && now % 2 === 0) {
+    // On mobile, skip frames for better performance and lower CPU usage
+    if (isMobile && now % 3 !== 0) { // Skip more frames on mobile (process only every 3rd frame)
       heartsRef.current.forEach(heart => {
         updatedHearts.push(heart);
       });
@@ -219,28 +219,40 @@ export default function Home() {
       }
       
       // Update position with gravity - use higher values on mobile for faster movement
-      heart.velocity.y += isMobile ? 0.15 : 0.1; // Increased gravity on mobile
+      heart.velocity.y += isMobile ? 0.3 : 0.1; // Much more gravity on mobile for faster movement
       
-      // Apply velocity
-      heart.x += heart.velocity.x;
-      heart.y += heart.velocity.y;
+      // Apply velocity with step size based on device for consistent behavior
+      const stepMultiplier = isMobile ? 1.2 : 1.0; // Move faster on mobile
+      heart.x += heart.velocity.x * stepMultiplier;
+      heart.y += heart.velocity.y * stepMultiplier;
       
       // Floor collision
       if (heart.y + heart.size > window.innerHeight) {
         heart.y = window.innerHeight - heart.size;
-        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.5 : 0.3); // More energetic bounce on mobile
+        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.6 : 0.3); // More energetic bounce on mobile
         
         // Stop if velocity is very low (optimization)
-        if (Math.abs(heart.velocity.y) < 0.5) {
+        if (Math.abs(heart.velocity.y) < 0.8) { // Higher threshold on mobile
           heart.velocity.y = 0;
           // Also reduce x velocity when settled for better performance
-          heart.velocity.x *= isMobile ? 0.95 : 0.9; // Less dampening on mobile
+          heart.velocity.x *= isMobile ? 0.9 : 0.9;
         }
       }
       
-      // Wall collisions with optimization for settled hearts
-      if ((heart.x < 0 || heart.x + heart.size > window.innerWidth) && Math.abs(heart.velocity.x) > 0.1) {
-        heart.velocity.x = -heart.velocity.x * (isMobile ? 0.5 : 0.3); // More energetic bounce on mobile
+      // On mobile, simplified wall collision for better performance
+      if (isMobile) {
+        if (heart.x < 0) {
+          heart.x = 0;
+          heart.velocity.x = Math.abs(heart.velocity.x) * 0.6;
+        } else if (heart.x + heart.size > window.innerWidth) {
+          heart.x = window.innerWidth - heart.size;
+          heart.velocity.x = -Math.abs(heart.velocity.x) * 0.6;
+        }
+      } else {
+        // More detailed collision for desktop
+        if ((heart.x < 0 || heart.x + heart.size > window.innerWidth) && Math.abs(heart.velocity.x) > 0.1) {
+          heart.velocity.x = -heart.velocity.x * 0.3;
+        }
       }
       
       // Constrain within window
@@ -248,7 +260,7 @@ export default function Home() {
       
       // Apply faster rotation on mobile
       if (Math.abs(heart.velocity.x) > 0.1) {
-        heart.rotation += heart.velocity.x * (isMobile ? 0.3 : 0.2); // More rotation on mobile
+        heart.rotation += heart.velocity.x * (isMobile ? 0.5 : 0.2); // More rotation on mobile
       }
       
       // Update DOM element position - must set left/top not just transform
@@ -274,7 +286,7 @@ export default function Home() {
     if (currentIndex < count - 1) {
       setTimeout(() => {
         staggeredHeartCreation(x, y, count, currentIndex + 1);
-      }, isMobile ? 5 : 5); // Quicker spawn on mobile
+      }, isMobile ? 2 : 5); // Much quicker spawn on mobile
     }
   };
   
@@ -282,7 +294,7 @@ export default function Home() {
   const spawnHearts = (x: number, y: number) => {
     const now = Date.now();
     // Throttle spawning for better performance
-    const spawnThrottle = isMobile ? 100 : 60; // Increased throttle to reduce spawn rate
+    const spawnThrottle = isMobile ? 75 : 60; // Less throttle on mobile for more responsive feedback
     
     if (now - lastSpawnTimeRef.current < spawnThrottle) {
       return;
@@ -307,7 +319,7 @@ export default function Home() {
     }
     
     // Spawn fewer hearts for better performance, especially on mobile
-    const count = isMobile ? 2 : 3; // Reduced count significantly
+    const count = isMobile ? 2 : 3; // Keep count low on mobile
     
     // Use staggered creation instead of all at once
     staggeredHeartCreation(x, y, count);
@@ -602,39 +614,82 @@ export default function Home() {
             fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}
         >
-          Coming Soon™
+          Work In Progress
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
           <div className="relative">
-            <select
-              onChange={handleContactOptionChange}
-              className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
-                      text-white 
-                      hover:scale-105
-                      active:scale-95
-                      cursor-pointer transition-all duration-200
-                      touch-manipulation
-                      border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
-              style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                background: p3Blue,
-                backgroundColor: fallbackBlue,
-                backgroundImage: 'none', // Remove the dropdown arrow
-                WebkitAppearance: 'none',
-                MozAppearance: 'none',
-                appearance: 'none', // Standard property for newer browsers
-                textIndent: '0',
-                textOverflow: 'ellipsis',
-              }}
-              aria-label="Contact options"
-              defaultValue="get-in-touch"
-            >
-              <option value="get-in-touch" disabled hidden>Contact</option>
-              <optgroup label="" style={{ display: 'none' }}></optgroup>
-              <option value="email">Email</option>
-              <option value="twitter">Twitter</option>
-            </select>
+            {isMobile ? (
+              // On mobile, use direct buttons instead of dropdown for better compatibility
+              <div className="flex space-x-3">
+                <a 
+                  href="mailto:contact@eriks.design"
+                  className="px-6 py-3 rounded-full text-base font-bold
+                          text-white 
+                          hover:scale-105
+                          active:scale-95
+                          transition-all duration-200
+                          touch-manipulation
+                          border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
+                  style={{
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                    background: p3Blue,
+                    backgroundColor: fallbackBlue,
+                  }}
+                >
+                  Email
+                </a>
+                <a 
+                  href="https://twitter.com/0xago"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 rounded-full text-base font-bold
+                          text-white 
+                          hover:scale-105
+                          active:scale-95
+                          transition-all duration-200
+                          touch-manipulation
+                          border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
+                  style={{
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                    background: p3Blue,
+                    backgroundColor: fallbackBlue,
+                  }}
+                >
+                  Twitter
+                </a>
+              </div>
+            ) : (
+              // On desktop, use the select dropdown
+              <select
+                onChange={handleContactOptionChange}
+                className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+                        text-white 
+                        hover:scale-105
+                        active:scale-95
+                        cursor-pointer transition-all duration-200
+                        touch-manipulation
+                        border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
+                style={{
+                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                  background: p3Blue,
+                  backgroundColor: fallbackBlue,
+                  backgroundImage: 'none', // Remove the dropdown arrow
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none', // Standard property for newer browsers
+                  textIndent: '0',
+                  textOverflow: 'ellipsis',
+                }}
+                aria-label="Contact options"
+                defaultValue="get-in-touch"
+              >
+                <option value="get-in-touch" disabled hidden>Contact</option>
+                <optgroup label="" style={{ display: 'none' }}></optgroup>
+                <option value="email">Email</option>
+                <option value="twitter">Twitter</option>
+              </select>
+            )}
           </div>
         </div>
       </main>
