@@ -17,12 +17,12 @@ interface Heart {
 // Configuration constants
 const HEART_SIZE = 40
 const SPAWN_RATE_DESKTOP = 24
-const SPAWN_RATE_MOBILE = 100 // Much slower spawn rate on mobile
+const SPAWN_RATE_MOBILE = 200 // Even slower for mobile
 const HEART_LIFETIME = 4000
 const FADE_DURATION = 4000
 const VELOCITY_THRESHOLD = 0.1
 const BATCH_UPDATE_MS = 16
-const MAX_HEARTS_MOBILE = 15 // Limit for mobile devices
+const MAX_HEARTS_MOBILE = 8 // Fewer hearts on mobile
 
 export default function Home() {
   const rafRef = useRef<number>()
@@ -47,22 +47,19 @@ export default function Home() {
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
-    // Prevent scrolling when interacting with hearts
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    document.body.style.position = 'fixed';
-    document.body.style.width = '100%';
-    document.body.style.height = '100%';
-    document.body.style.touchAction = 'none';
+    // Fix for scrolling on main area only - don't disable all scrolling
+    const mainElement = document.querySelector('main');
+    if (mainElement) {
+      mainElement.style.overflow = 'hidden';
+      mainElement.style.touchAction = 'none';
+    }
     
     return () => {
       window.removeEventListener('resize', checkMobile);
-      document.body.style.overflow = '';
-      document.documentElement.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
-      document.body.style.height = '';
-      document.body.style.touchAction = '';
+      if (mainElement) {
+        mainElement.style.overflow = '';
+        mainElement.style.touchAction = '';
+      }
     };
   }, []);
 
@@ -76,17 +73,17 @@ export default function Home() {
   const createHeart = (x: number, y: number) => {
     // Simpler physics for mobile
     const angle = Math.random() * Math.PI * 2
-    const speed = isMobile ? 1 : (1 + Math.random() * 2)
+    const speed = isMobile ? 0.7 : (1 + Math.random() * 2)
     
     return {
       id: heartIdRef.current++,
       x,
       y,
-      scale: 0.8 + Math.random() * 0.4,
+      scale: isMobile ? 0.6 + Math.random() * 0.3 : 0.8 + Math.random() * 0.4,
       rotation: Math.random() * 360,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 1 : 2) // Less initial velocity on mobile
+        y: Math.sin(angle) * speed - (isMobile ? 0.5 : 2) // Much less initial velocity on mobile
       },
       settled: false,
       createdAt: Date.now()
@@ -167,7 +164,7 @@ export default function Home() {
     })
 
     // Use more optimized animation approach for mobile
-    const timeoutDuration = isMobile ? 32 : BATCH_UPDATE_MS // Lower framerate on mobile
+    const timeoutDuration = isMobile ? 64 : BATCH_UPDATE_MS // Even lower framerate on mobile
     
     timeoutRef.current = setTimeout(() => {
       rafRef.current = requestAnimationFrame(updatePhysics)
@@ -177,8 +174,12 @@ export default function Home() {
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isPressed) return
     
-    // Prevent default to stop scrolling
-    if (e.cancelable) e.preventDefault()
+    // Only prevent default on the main element, not affecting buttons
+    if (e.target && (e.target as Element).closest('main') && 
+        !(e.target as Element).closest('a') && 
+        e.cancelable) {
+      e.preventDefault()
+    }
     
     const x = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
     const y = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
@@ -187,8 +188,12 @@ export default function Home() {
 
   useEffect(() => {
     const handleStart = (e: MouseEvent | TouchEvent) => {
-      // Prevent default to stop scrolling
-      if (e.cancelable) e.preventDefault()
+      // Only prevent default on the main element, not affecting buttons
+      if (e.target && (e.target as Element).closest('main') && 
+          !(e.target as Element).closest('a') && 
+          e.cancelable) {
+        e.preventDefault()
+      }
       
       setIsPressed(true)
       handleMove(e)
@@ -248,6 +253,7 @@ export default function Home() {
                     cursor-pointer transition-all duration-200
                     touch-manipulation"
           style={{ fontFamily: 'SF Pro Rounded, system-ui, sans-serif' }}
+          onClick={(e) => e.stopPropagation()}
         >
           Contact
         </a>
@@ -260,12 +266,12 @@ export default function Home() {
             Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
 
           // Smaller, more efficient heart rendering
-          const fontSize = isMobile ? "text-2xl" : "text-3xl"
+          const fontSize = isMobile ? "text-xl" : "text-3xl"
 
           return (
             <motion.div
               key={heart.id}
-              className={`fixed pointer-events-none ${fontSize} z-50`}
+              className={`fixed pointer-events-none ${fontSize} z-50 will-change-transform`}
               initial={{ 
                 transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(0) rotate(${heart.rotation}deg)`,
                 opacity: 0
@@ -275,7 +281,7 @@ export default function Home() {
                 opacity
               }}
               transition={{ 
-                transform: { type: "tween", duration: isMobile ? 0.2 : 0.1 },
+                transform: { type: "tween", duration: isMobile ? 0.25 : 0.1 },
                 opacity: { duration: 0.3 }
               }}
             >
