@@ -436,6 +436,13 @@ export default function Home() {
             50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
             100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
           }
+          
+          /* Global font settings */
+          html, body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
         `}</style>
 
         <h1
@@ -443,10 +450,10 @@ export default function Home() {
                     text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
                     text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
           style={{
-            fontFamily: 'SF Pro Rounded, system-ui, sans-serif'
+            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}
         >
-          Coming soon™
+          Coming Soon™
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
@@ -459,7 +466,7 @@ export default function Home() {
                       cursor-pointer transition-all duration-200
                       touch-manipulation"
             style={{
-              fontFamily: 'SF Pro Rounded, system-ui, sans-serif',
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
               background: p3Blue,
               backgroundColor: fallbackBlue,
             }}
