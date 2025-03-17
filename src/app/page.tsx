@@ -120,17 +120,18 @@ export default function Home() {
     // Get heart element from pool
     const element = getHeartElement();
     
-    // Set initial properties all at once for better performance
-    const initialTransform = `translate(${x}px, ${y}px) rotate(${rotation}deg)`;
+    // Set position correctly, we need both the left/top AND the transform
+    element.style.left = `${x}px`;
+    element.style.top = `${y}px`;
     element.style.fontSize = `${size}px`;
     element.style.opacity = '1';
-    element.style.transform = initialTransform;
+    element.style.transform = `rotate(${rotation}deg)`;
     
     // Create heart object
     const heart: Heart = {
       id,
-      x,
-      y,
+      x, // Initial x position is the cursor x
+      y, // Initial y position is the cursor y
       size,
       rotation,
       opacity: 1,
@@ -202,8 +203,10 @@ export default function Home() {
         heart.rotation += heart.velocity.x * (isMobile ? 0.1 : 0.2);
       }
       
-      // Update DOM element using transform for better performance
-      heart.element.style.transform = `translate(${heart.x}px, ${heart.y}px) rotate(${heart.rotation}deg)`;
+      // Update DOM element position - must set left/top not just transform
+      heart.element.style.left = `${heart.x}px`;
+      heart.element.style.top = `${heart.y}px`;
+      heart.element.style.transform = `rotate(${heart.rotation}deg)`;
       
       updatedHearts.push(heart);
     }
