@@ -539,79 +539,11 @@ export default function Home() {
       // Direct email link for both mobile and desktop - same tab
       window.location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      // For Twitter - reliable new tab opening technique for all devices
-      try {
-        // Create an anchor element with proper attributes for new tab
-        const a = document.createElement('a');
-        a.href = 'https://twitter.com/0xago';
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        
-        // Special handling for iOS devices which may handle _blank differently
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
-          // On iOS, we need additional attributes for reliable new tab behavior
-          a.setAttribute('data-popup', 'true');
-          a.dataset.url = a.href; // Backup the URL in a dataset
-        }
-        
-        // Hide element but keep it functional
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        
-        // Use click event for most web standards compliant behavior
-        a.click();
-        
-        // Clean up DOM
-        setTimeout(() => {
-          document.body.removeChild(a);
-        }, 100);
-      } catch (err) {
-        console.error('Failed to open Twitter in new tab', err);
-        // Fallback to the most compatible approach - window.open
-        window.open('https://twitter.com/0xago', '_blank');
-        
-        // Ultimate fallback if everything else fails
-        if (!window.open) {
-          window.location.href = 'https://twitter.com/0xago';
-        }
-      }
+      // Simple and reliable approach - works on all devices
+      window.open('https://twitter.com/0xago', '_blank', 'noopener');
     } else if (value === 'linkedin') {
-      // For LinkedIn - reliable new tab opening technique for all devices
-      try {
-        // Create an anchor element with proper attributes for new tab
-        const a = document.createElement('a');
-        a.href = 'https://www.linkedin.com/in/eriknson/';
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        
-        // Special handling for iOS devices which may handle _blank differently
-        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
-          // On iOS, we need additional attributes for reliable new tab behavior
-          a.setAttribute('data-popup', 'true');
-          a.dataset.url = a.href; // Backup the URL in a dataset
-        }
-        
-        // Hide element but keep it functional
-        a.style.display = 'none';
-        document.body.appendChild(a);
-        
-        // Use click event for most web standards compliant behavior
-        a.click();
-        
-        // Clean up DOM
-        setTimeout(() => {
-          document.body.removeChild(a);
-        }, 100);
-      } catch (err) {
-        console.error('Failed to open LinkedIn in new tab', err);
-        // Fallback to the most compatible approach - window.open
-        window.open('https://www.linkedin.com/in/eriknson/', '_blank');
-        
-        // Ultimate fallback if everything else fails
-        if (!window.open) {
-          window.location.href = 'https://www.linkedin.com/in/eriknson/';
-        }
-      }
+      // Simple and reliable approach - works on all devices
+      window.open('https://www.linkedin.com/in/eriknson/', '_blank', 'noopener');
     }
     
     // Ensure select is blurred on mobile to close it properly
