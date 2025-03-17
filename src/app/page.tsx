@@ -11,19 +11,20 @@ interface Heart {
   rotation: number
   velocity: { x: number; y: number }
   settled: boolean
-  createdAt: number // Add timestamp for fading
+  createdAt: number
 }
 
+// Configuration constants
 const HEART_SIZE = 40
-const SPAWN_RATE = 24
-const COLLISION_RADIUS = HEART_SIZE * 0.6
-const HEART_LIFETIME = 4000 // Shorter lifetime before fade starts
-const FADE_DURATION = 4000 // Longer fade duration for subtler effect
-const VELOCITY_THRESHOLD = 0.1 // Threshold to consider heart settled
-const BATCH_UPDATE_MS = 16 // Roughly 60fps
+const SPAWN_RATE_DESKTOP = 24
+const SPAWN_RATE_MOBILE = 100 // Much slower spawn rate on mobile
+const HEART_LIFETIME = 4000
+const FADE_DURATION = 4000
+const VELOCITY_THRESHOLD = 0.1
+const BATCH_UPDATE_MS = 16
+const MAX_HEARTS_MOBILE = 15 // Limit for mobile devices
 
 export default function Home() {
-  // Move refs inside component
   const rafRef = useRef<number>()
   const timeoutRef = useRef<NodeJS.Timeout>()
   const heartIdRef = useRef(0)
@@ -31,9 +32,36 @@ export default function Home() {
   
   const [hearts, setHearts] = useState<Heart[]>([])
   const [isPressed, setIsPressed] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
 
-  const checkCollision = (x: number, y: number, settled: Heart[]) => {
-    // Only check bottom of screen, no heart-to-heart collisions
+  // Check if device is mobile
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    // Prevent scrolling when interacting with hearts
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.width = '100%';
+    document.body.style.height = '100%';
+    document.body.style.touchAction = 'none';
+    
+    return () => {
+      window.removeEventListener('resize', checkMobile);
+      document.body.style.overflow = '';
+      document.documentElement.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+      document.body.style.height = '';
+      document.body.style.touchAction = '';
+    };
+  }, []);
+
+  const checkCollision = (x: number, y: number) => {
     if (y >= window.innerHeight) {
       return window.innerHeight;
     }
@@ -41,8 +69,9 @@ export default function Home() {
   }
 
   const createHeart = (x: number, y: number) => {
+    // Simpler physics for mobile
     const angle = Math.random() * Math.PI * 2
-    const speed = 1 + Math.random() * 2 // Slightly reduced initial speed
+    const speed = isMobile ? 1 : (1 + Math.random() * 2)
     
     return {
       id: heartIdRef.current++,
@@ -52,7 +81,7 @@ export default function Home() {
       rotation: Math.random() * 360,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - 2
+        y: Math.sin(angle) * speed - (isMobile ? 1 : 2) // Less initial velocity on mobile
       },
       settled: false,
       createdAt: Date.now()
@@ -61,11 +90,22 @@ export default function Home() {
 
   const spawnHearts = useCallback((x: number, y: number) => {
     const now = performance.now()
-    if (now - lastSpawnRef.current < SPAWN_RATE) return
+    const spawnRate = isMobile ? SPAWN_RATE_MOBILE : SPAWN_RATE_DESKTOP
+    
+    if (now - lastSpawnRef.current < spawnRate) return
     lastSpawnRef.current = now
 
-    setHearts(prev => [...prev, createHeart(x, y)]) // Remove max hearts check
-  }, [])
+    setHearts(prev => {
+      // On mobile, limit the number of hearts
+      if (isMobile && prev.length >= MAX_HEARTS_MOBILE) {
+        // Replace oldest heart with new one
+        const newHearts = [...prev]
+        newHearts.shift() // Remove oldest heart
+        return [...newHearts, createHeart(x, y)]
+      }
+      return [...prev, createHeart(x, y)]
+    })
+  }, [isMobile])
 
   const updatePhysics = useCallback(() => {
     const now = Date.now()
@@ -84,13 +124,12 @@ export default function Home() {
         const nextY = heart.y + heart.velocity.y
         const nextX = heart.x + heart.velocity.x
 
-        // Check if velocity is below threshold
         if (Math.abs(heart.velocity.x) < VELOCITY_THRESHOLD && 
             Math.abs(heart.velocity.y) < VELOCITY_THRESHOLD) {
           return { ...heart, settled: true }
         }
 
-        const collisionY = checkCollision(nextX, nextY, settled)
+        const collisionY = checkCollision(nextX, nextY)
 
         if (collisionY !== null) {
           return {
@@ -122,13 +161,20 @@ export default function Home() {
       return updated ? nextHearts : filtered
     })
 
+    // Use more optimized animation approach for mobile
+    const timeoutDuration = isMobile ? 32 : BATCH_UPDATE_MS // Lower framerate on mobile
+    
     timeoutRef.current = setTimeout(() => {
       rafRef.current = requestAnimationFrame(updatePhysics)
-    }, BATCH_UPDATE_MS)
-  }, [])
+    }, timeoutDuration)
+  }, [isMobile])
 
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
     if (!isPressed) return
+    
+    // Prevent default to stop scrolling
+    if (e.cancelable) e.preventDefault()
+    
     const x = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX
     const y = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY
     spawnHearts(x, y)
@@ -136,18 +182,22 @@ export default function Home() {
 
   useEffect(() => {
     const handleStart = (e: MouseEvent | TouchEvent) => {
+      // Prevent default to stop scrolling
+      if (e.cancelable) e.preventDefault()
+      
       setIsPressed(true)
       handleMove(e)
     }
 
     const handleEnd = () => setIsPressed(false)
 
+    // Passive false to allow preventDefault
     document.addEventListener('mousedown', handleStart)
     document.addEventListener('mousemove', handleMove)
     document.addEventListener('mouseup', handleEnd)
     document.addEventListener('mouseleave', handleEnd)
-    document.addEventListener('touchstart', handleStart)
-    document.addEventListener('touchmove', handleMove, { passive: true })
+    document.addEventListener('touchstart', handleStart, { passive: false })
+    document.addEventListener('touchmove', handleMove, { passive: false })
     document.addEventListener('touchend', handleEnd)
 
     return () => {
@@ -182,7 +232,6 @@ export default function Home() {
         Coming soon
       </h1>
 
-      {/* Completely rebuilt contact button with simpler styling */}
       <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center z-[100]">
         <a
           href="mailto:contact@eriks.design"
@@ -204,10 +253,13 @@ export default function Home() {
           const opacity = age > HEART_LIFETIME ? 
             Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
 
+          // Smaller, more efficient heart rendering
+          const fontSize = isMobile ? "text-2xl" : "text-3xl"
+
           return (
             <motion.div
               key={heart.id}
-              className="fixed pointer-events-none text-3xl z-50"
+              className={`fixed pointer-events-none ${fontSize} z-50`}
               initial={{ 
                 transform: `translate3d(${heart.x}px, ${heart.y}px, 0) scale(0) rotate(${heart.rotation}deg)`,
                 opacity: 0
@@ -217,7 +269,7 @@ export default function Home() {
                 opacity
               }}
               transition={{ 
-                transform: { type: "tween", duration: 0.1 },
+                transform: { type: "tween", duration: isMobile ? 0.2 : 0.1 },
                 opacity: { duration: 0.3 }
               }}
             >
