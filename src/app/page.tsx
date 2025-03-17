@@ -502,7 +502,7 @@ export default function Home() {
           
           /* Global font settings */
           html, body {
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: "PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
           }
@@ -603,10 +603,10 @@ export default function Home() {
                     text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
                     text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
           style={{
-            fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
+            fontFamily: '"PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}
         >
-          Coming Soon™
+          Work in Progress
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
@@ -632,7 +632,7 @@ export default function Home() {
                 }
               }}
               onChange={handleContactOptionChange}
-              className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+              className="contact-select appearance-none px-10 py-5 md:px-8 md:py-4 rounded-full text-xl md:text-lg font-semibold
                       text-white 
                       hover:scale-105
                       active:scale-95
@@ -640,23 +640,24 @@ export default function Home() {
                       touch-manipulation
                       border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
               style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 background: p3Blue,
                 backgroundColor: fallbackBlue,
                 backgroundImage: 'none',
                 WebkitAppearance: 'none',
                 MozAppearance: 'none',
                 appearance: 'none',
-                paddingRight: '16px',
-                paddingLeft: '16px',
+                paddingRight: '18px',
+                paddingLeft: '18px',
                 textIndent: '0',
                 textOverflow: 'ellipsis',
                 ...(isMobile ? { 
-                  fontSize: '16px',
+                  fontSize: '18px',
                   touchAction: 'manipulation',
                   userSelect: 'none',
                   fontWeight: 600,
-                  minHeight: '44px',
+                  minHeight: '48px',
+                  minWidth: '160px',
                 } : {}),
               }}
               aria-label="Contact options"
