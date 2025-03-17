@@ -36,6 +36,10 @@ export default function Home() {
   const [cursorState, setCursorState] = useState<CursorState>('default')
   const cursorRef = useRef<HTMLDivElement>(null)
   
+  // Dropdown state
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  
   // Maximum number of hearts to allow on screen for performance
   const MAX_HEARTS = isMobile ? 25 : 50; // Significantly reduced for better performance
   
@@ -405,6 +409,23 @@ export default function Home() {
     };
   }, [isMobile]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside as EventListener);
+    document.addEventListener('touchstart', handleClickOutside as EventListener);
+    
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside as EventListener);
+      document.removeEventListener('touchstart', handleClickOutside as EventListener);
+    };
+  }, []);
+
   // P3 color space vibrant blue with fallback
   const p3Blue = "color(display-p3 0 0.454 1)"; // Vibrant blue in P3 color space
   const fallbackBlue = "#0074FF"; // Standard sRGB fallback
@@ -466,24 +487,71 @@ export default function Home() {
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
-          <a
-            href="mailto:contact@eriks.design"
-            className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+          <div className="relative group" ref={dropdownRef}>
+            {/* Main contact button - now acts as dropdown trigger */}
+            <button
+              className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
                       text-white 
                       hover:scale-105
                       active:scale-95
                       cursor-pointer transition-all duration-200
-                      touch-manipulation"
-            style={{
-              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-              background: p3Blue,
-              backgroundColor: fallbackBlue,
-            }}
-            onClick={(e) => e.stopPropagation()}
-            aria-label="Contact via email"
-          >
-            Contact
-          </a>
+                      touch-manipulation flex items-center"
+              style={{
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                background: p3Blue,
+                backgroundColor: fallbackBlue,
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setDropdownOpen(!dropdownOpen);
+              }}
+              aria-haspopup="true"
+              aria-expanded={dropdownOpen ? "true" : "false"}
+            >
+              Contact
+              <svg 
+                className={`ml-2 w-4 h-4 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
+                xmlns="http://www.w3.org/2000/svg" 
+                viewBox="0 0 20 20" 
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            {/* Dropdown menu - use both hover and state for maximum compatibility */}
+            <div 
+              className={`absolute mt-2 w-full bg-white dark:bg-[#333333] rounded-lg shadow-lg overflow-hidden
+                        transition-all duration-200 transform origin-top 
+                        ${!dropdownOpen ? 'group-hover:opacity-100 group-hover:visible group-hover:scale-100' : ''}
+                        ${dropdownOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}
+            >
+              <a 
+                href="mailto:contact@eriks.design"
+                className="block px-4 py-2 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-[#444444] transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(false);
+                }}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Email
+              </a>
+              <a 
+                href="https://twitter.com/vibes"
+                className="block px-4 py-2 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-[#444444] transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setDropdownOpen(false);
+                }}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Twitter
+              </a>
+            </div>
+          </div>
         </div>
       </main>
       
