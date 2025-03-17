@@ -36,10 +36,6 @@ export default function Home() {
   const [cursorState, setCursorState] = useState<CursorState>('default')
   const cursorRef = useRef<HTMLDivElement>(null)
   
-  // Dropdown state
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
-  
   // Maximum number of hearts to allow on screen for performance
   const MAX_HEARTS = isMobile ? 25 : 50; // Significantly reduced for better performance
   
@@ -409,22 +405,18 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
+  // Handle redirect for contact options
+  const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'email') {
+      window.open('mailto:contact@eriks.design', '_blank');
+    } else if (value === 'twitter') {
+      window.open('https://twitter.com/vibes', '_blank');
+    }
     
-    document.addEventListener('mousedown', handleClickOutside as EventListener);
-    document.addEventListener('touchstart', handleClickOutside as EventListener);
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside as EventListener);
-      document.removeEventListener('touchstart', handleClickOutside as EventListener);
-    };
-  }, []);
+    // Reset select to default option after navigation
+    e.target.value = '';
+  };
 
   // P3 color space vibrant blue with fallback
   const p3Blue = "color(display-p3 0 0.454 1)"; // Vibrant blue in P3 color space
@@ -473,6 +465,21 @@ export default function Home() {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
           }
+          
+          /* Select element styling */
+          select.contact-select {
+            text-align: center;
+            text-align-last: center;
+            -moz-text-align-last: center;
+            color: white;
+          }
+          
+          /* Style select options - note that this only works in some browsers */
+          select.contact-select option {
+            background-color: white;
+            color: #333;
+            text-align: left;
+          }
         `}</style>
 
         <h1
@@ -487,70 +494,36 @@ export default function Home() {
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
-          <div className="relative group" ref={dropdownRef}>
-            {/* Main contact button - now acts as dropdown trigger */}
-            <button
-              className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+          <div className="relative">
+            <select
+              onChange={handleContactOptionChange}
+              className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
                       text-white 
                       hover:scale-105
                       active:scale-95
                       cursor-pointer transition-all duration-200
-                      touch-manipulation flex items-center"
+                      touch-manipulation
+                      border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
               style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 background: p3Blue,
                 backgroundColor: fallbackBlue,
+                backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'right 12px center',
+                paddingRight: '36px',
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                textIndent: '1px',
+                textOverflow: 'ellipsis',
               }}
-              onClick={(e) => {
-                e.stopPropagation();
-                setDropdownOpen(!dropdownOpen);
-              }}
-              aria-haspopup="true"
-              aria-expanded={dropdownOpen ? "true" : "false"}
+              aria-label="Contact options"
+              defaultValue=""
             >
-              Contact
-              <svg 
-                className={`ml-2 w-4 h-4 transition-transform duration-200 ${dropdownOpen ? 'rotate-180' : ''}`}
-                xmlns="http://www.w3.org/2000/svg" 
-                viewBox="0 0 20 20" 
-                fill="currentColor"
-              >
-                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-              </svg>
-            </button>
-            
-            {/* Dropdown menu - use both hover and state for maximum compatibility */}
-            <div 
-              className={`absolute mt-2 w-full bg-white dark:bg-[#333333] rounded-lg shadow-lg overflow-hidden
-                        transition-all duration-200 transform origin-top 
-                        ${!dropdownOpen ? 'group-hover:opacity-100 group-hover:visible group-hover:scale-100' : ''}
-                        ${dropdownOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}
-            >
-              <a 
-                href="mailto:contact@eriks.design"
-                className="block px-4 py-2 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-[#444444] transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDropdownOpen(false);
-                }}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Email
-              </a>
-              <a 
-                href="https://twitter.com/vibes"
-                className="block px-4 py-2 text-sm font-medium text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-[#444444] transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDropdownOpen(false);
-                }}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Twitter
-              </a>
-            </div>
+              <option value="" disabled>Contact</option>
+              <option value="email">Email</option>
+              <option value="twitter">Twitter</option>
+            </select>
           </div>
         </div>
       </main>
