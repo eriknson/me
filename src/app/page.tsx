@@ -177,7 +177,7 @@ export default function Home() {
       element,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 1.5 : 2.5) // Reduced initial boost
+        y: Math.sin(angle) * speed - (isMobile ? 3.0 : 2.5) // Increased initial boost on mobile for faster movement
       },
       created: Date.now()
     };
@@ -189,7 +189,7 @@ export default function Home() {
   // More efficient update with throttled calculations
   const updateHearts = () => {
     const now = Date.now();
-    const lifespan = isMobile ? 3000 : 5000; // 3-5 seconds lifespan
+    const lifespan = isMobile ? 2500 : 5000; // Reduced lifespan on mobile for faster animations
     const fadeTime = 500; // 0.5 second fade
     
     // Filter and update hearts in one pass for better performance
@@ -209,8 +209,8 @@ export default function Home() {
         heart.element.style.opacity = heart.opacity.toString();
       }
       
-      // Update position with gravity - use smaller steps on mobile
-      heart.velocity.y += isMobile ? 0.08 : 0.1; // Gentler gravity on mobile
+      // Update position with gravity - use higher values on mobile for faster movement
+      heart.velocity.y += isMobile ? 0.15 : 0.1; // Increased gravity on mobile
       
       // Apply velocity
       heart.x += heart.velocity.x;
@@ -219,27 +219,27 @@ export default function Home() {
       // Floor collision
       if (heart.y + heart.size > window.innerHeight) {
         heart.y = window.innerHeight - heart.size;
-        heart.velocity.y = -heart.velocity.y * 0.3; // Bounce with damping
+        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.5 : 0.3); // More energetic bounce on mobile
         
         // Stop if velocity is very low (optimization)
         if (Math.abs(heart.velocity.y) < 0.5) {
           heart.velocity.y = 0;
           // Also reduce x velocity when settled for better performance
-          heart.velocity.x *= 0.9;
+          heart.velocity.x *= isMobile ? 0.95 : 0.9; // Less dampening on mobile
         }
       }
       
       // Wall collisions with optimization for settled hearts
       if ((heart.x < 0 || heart.x + heart.size > window.innerWidth) && Math.abs(heart.velocity.x) > 0.1) {
-        heart.velocity.x = -heart.velocity.x * 0.3; // Bounce with damping
+        heart.velocity.x = -heart.velocity.x * (isMobile ? 0.5 : 0.3); // More energetic bounce on mobile
       }
       
       // Constrain within window
       heart.x = Math.max(0, Math.min(window.innerWidth - heart.size, heart.x));
       
-      // Apply slow rotation - less on mobile for performance
+      // Apply faster rotation on mobile
       if (Math.abs(heart.velocity.x) > 0.1) {
-        heart.rotation += heart.velocity.x * (isMobile ? 0.1 : 0.2);
+        heart.rotation += heart.velocity.x * (isMobile ? 0.3 : 0.2); // More rotation on mobile
       }
       
       // Update DOM element position - must set left/top not just transform
@@ -265,7 +265,7 @@ export default function Home() {
     if (currentIndex < count - 1) {
       setTimeout(() => {
         staggeredHeartCreation(x, y, count, currentIndex + 1);
-      }, isMobile ? 8 : 5); // Slight delay between creations
+      }, isMobile ? 5 : 5); // Quicker spawn on mobile
     }
   };
   
@@ -273,7 +273,7 @@ export default function Home() {
   const spawnHearts = (x: number, y: number) => {
     const now = Date.now();
     // Throttle spawning on mobile to prevent performance issues
-    const spawnThrottle = isMobile ? 80 : 40; // Increased throttle time for better performance
+    const spawnThrottle = isMobile ? 60 : 40; // Faster spawn rate on mobile
     
     if (now - lastSpawnTimeRef.current < spawnThrottle) {
       return;
@@ -285,7 +285,7 @@ export default function Home() {
     if (heartsRef.current.length >= MAX_HEARTS) {
       // Remove oldest hearts when at limit
       const toRemove = Math.min(
-        heartsRef.current.length + (isMobile ? 3 : 5) - MAX_HEARTS,
+        heartsRef.current.length + (isMobile ? 5 : 5) - MAX_HEARTS,
         10 // Cap removal to avoid performance hit from bulk removal
       );
       
@@ -297,8 +297,8 @@ export default function Home() {
       }
     }
     
-    // Spawn fewer hearts on mobile for performance
-    const count = isMobile ? 3 : 5; // Reduced count for better initial performance
+    // Spawn slightly more hearts on mobile for more dynamic feel
+    const count = isMobile ? 4 : 5;
     
     // Use staggered creation instead of all at once
     staggeredHeartCreation(x, y, count);
