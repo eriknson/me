@@ -38,7 +38,12 @@ export default function Home() {
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
+      
+      // Adjust viewport height for mobile browsers
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
     };
+    
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
@@ -220,9 +225,10 @@ export default function Home() {
   }, [updatePhysics])
 
   return (
-    <main className="relative min-h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]">
+    <main className="relative h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]" 
+          style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       <h1
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
+        className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
                    text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
                    text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
         style={{
@@ -232,7 +238,7 @@ export default function Home() {
         Coming soon
       </h1>
 
-      <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center z-[100]">
+      <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
         <a
           href="mailto:contact@eriks.design"
           className="px-6 py-3 md:px-5 md:py-2 rounded-full text-base md:text-sm font-medium
