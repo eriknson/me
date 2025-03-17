@@ -516,23 +516,34 @@ export default function Home() {
             background-image: none !important;
           }
           
-          /* Chrome for Mac specific fix */
+          /* Super aggressive Chrome for Mac specific fix */
           @media screen and (-webkit-min-device-pixel-ratio: 0) {
             select.contact-select option::before,
             select.contact-select option::after {
               display: none !important;
+              content: none !important;
             }
             
             select.contact-select option {
               background-color: white !important;
               appearance: none !important;
               -webkit-appearance: none !important;
+              background-image: none !important;
             }
             
             select.contact-select option:checked,
             select.contact-select option:hover {
               background-color: rgba(0, 0, 0, 0.05) !important;
               background-image: none !important;
+              -webkit-background-image: none !important;
+              color: #333 !important;
+              box-shadow: none !important;
+              -webkit-box-shadow: none !important;
+            }
+            
+            /* Force reflow of options to clear previous styling */
+            select.contact-select:focus option {
+              transform: translateZ(0);
             }
           }
           
@@ -606,9 +617,9 @@ export default function Home() {
                 textOverflow: 'ellipsis',
               }}
               aria-label="Contact options"
-              defaultValue=""
+              defaultValue="get-in-touch"
             >
-              <option value="" disabled hidden>Contact</option>
+              <option value="get-in-touch" disabled hidden>Contact</option>
               <optgroup label="" style={{ display: 'none' }}></optgroup>
               <option value="email">Email</option>
               <option value="twitter">@0xago</option>
