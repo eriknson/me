@@ -506,6 +506,18 @@ export default function Home() {
             -moz-text-align-last: center;
             color: white;
             -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
+            transform: translateZ(0); /* Force hardware acceleration */
+          }
+          
+          /* Ensure better touch target size on mobile */
+          @media (max-width: 768px) {
+            select.contact-select {
+              min-height: 44px; /* Apple's recommended minimum touch target size */
+              min-width: 140px;
+              padding-top: 10px;
+              padding-bottom: 10px;
+              font-size: 16px !important; /* Prevent zoom on iOS */
+            }
           }
           
           /* Style select options */
@@ -589,6 +601,19 @@ export default function Home() {
             select.contact-select {
               font-size: 16px; /* Prevent auto-zoom on focus */
             }
+            
+            /* Add downward triangle manually for iOS */
+            .select-wrapper::after {
+              content: '';
+              border-left: 5px solid transparent;
+              border-right: 5px solid transparent;
+              border-top: 5px solid white;
+              position: absolute;
+              right: 12px;
+              top: 50%;
+              transform: translateY(-50%);
+              pointer-events: none;
+            }
           }
           
           /* Additional select mobile styles */
@@ -614,82 +639,57 @@ export default function Home() {
             fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
           }}
         >
-          Work In Progress
+          Coming Soon™
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
-          <div className="relative">
-            {isMobile ? (
-              // On mobile, use direct buttons instead of dropdown for better compatibility
-              <div className="flex space-x-3">
-                <a 
-                  href="mailto:contact@eriks.design"
-                  className="px-6 py-3 rounded-full text-base font-bold
-                          text-white 
-                          hover:scale-105
-                          active:scale-95
-                          transition-all duration-200
-                          touch-manipulation
-                          border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
-                  style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                    background: p3Blue,
-                    backgroundColor: fallbackBlue,
-                  }}
-                >
-                  Email
-                </a>
-                <a 
-                  href="https://twitter.com/0xago"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-6 py-3 rounded-full text-base font-bold
-                          text-white 
-                          hover:scale-105
-                          active:scale-95
-                          transition-all duration-200
-                          touch-manipulation
-                          border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
-                  style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                    background: p3Blue,
-                    backgroundColor: fallbackBlue,
-                  }}
-                >
-                  Twitter
-                </a>
-              </div>
-            ) : (
-              // On desktop, use the select dropdown
-              <select
-                onChange={handleContactOptionChange}
-                className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
-                        text-white 
-                        hover:scale-105
-                        active:scale-95
-                        cursor-pointer transition-all duration-200
-                        touch-manipulation
-                        border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
-                style={{
-                  fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                  background: p3Blue,
-                  backgroundColor: fallbackBlue,
-                  backgroundImage: 'none', // Remove the dropdown arrow
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'none',
-                  appearance: 'none', // Standard property for newer browsers
-                  textIndent: '0',
-                  textOverflow: 'ellipsis',
-                }}
-                aria-label="Contact options"
-                defaultValue="get-in-touch"
-              >
-                <option value="get-in-touch" disabled hidden>Contact</option>
-                <optgroup label="" style={{ display: 'none' }}></optgroup>
-                <option value="email">Email</option>
-                <option value="twitter">Twitter</option>
-              </select>
-            )}
+          <div className="relative select-wrapper">
+            <select
+              onChange={handleContactOptionChange}
+              className="contact-select appearance-none px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+                      text-white 
+                      hover:scale-105
+                      active:scale-95
+                      cursor-pointer transition-all duration-200
+                      touch-manipulation
+                      border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50" 
+              style={{
+                fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+                background: p3Blue,
+                backgroundColor: fallbackBlue,
+                backgroundImage: 'none', // Remove the dropdown arrow
+                WebkitAppearance: 'none',
+                MozAppearance: 'none',
+                appearance: 'none', // Standard property for newer browsers
+                textIndent: '0',
+                textOverflow: 'ellipsis',
+                ...(isMobile ? { 
+                  fontSize: '16px', // Prevent zoom on iOS
+                  touchAction: 'manipulation',
+                  userSelect: 'none',
+                } : {}),
+              }}
+              aria-label="Contact options"
+              defaultValue="get-in-touch"
+              onClick={(e) => {
+                // On mobile, ensure the select opens properly on tap
+                if (isMobile) {
+                  // This helps trigger native select UI on iOS
+                  (e.target as HTMLSelectElement).focus();
+                }
+              }}
+              // Add touch events for better mobile handling
+              onTouchStart={(e) => {
+                if (isMobile) {
+                  e.currentTarget.focus();
+                }
+              }}
+            >
+              <option value="get-in-touch" disabled hidden>Contact</option>
+              <optgroup label="" style={{ display: 'none' }}></optgroup>
+              <option value="email">Email</option>
+              <option value="twitter">Twitter</option>
+            </select>
           </div>
         </div>
       </main>
