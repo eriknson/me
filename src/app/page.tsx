@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { Analytics } from '@vercel/analytics/react'
 
 // Heart interface 
 interface Heart {
@@ -400,73 +401,78 @@ export default function Home() {
   const fallbackBlue = "#0074FF"; // Standard sRGB fallback
 
   return (
-    <main 
-      ref={containerRef}
-      className="relative h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]" 
-      style={{ 
-        height: 'calc(var(--vh, 1vh) * 100)',
-        // Use default cursor normally
-        cursor: 'auto'
-      }}
-      aria-label="Coming soon page with interactive heart animations"
-    >
-      {/* Custom prayer hands cursor only shows when active */}
-      {!isMobile && cursorState === 'active' && (
-        <div 
-          ref={cursorRef}
-          className="fixed pointer-events-none z-[1000] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
-          style={{
-            left: `${cursorPosition.x}px`,
-            top: `${cursorPosition.y}px`,
-            fontSize: '40px', // Larger size for more prominence
-            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))', // Enhanced glow
-            animation: 'sunPulse 0.6s infinite', // Faster, more dynamic pulse
-            willChange: 'transform, left, top',
-          }}
-        >
-          🌞
-        </div>
-      )}
-
-      <style jsx global>{`
-        @keyframes sunPulse {
-          0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
-          50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
-          100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
-        }
-      `}</style>
-
-      <h1
-        className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
-                   text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
-                   text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
-        style={{
-          fontFamily: 'SF Pro Rounded, system-ui, sans-serif'
+    <>
+      <main 
+        ref={containerRef}
+        className="relative h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]" 
+        style={{ 
+          height: 'calc(var(--vh, 1vh) * 100)',
+          // Use default cursor normally
+          cursor: 'auto'
         }}
+        aria-label="Coming soon page with interactive heart animations"
       >
-        Coming soon
-      </h1>
+        {/* Custom prayer hands cursor only shows when active */}
+        {!isMobile && cursorState === 'active' && (
+          <div 
+            ref={cursorRef}
+            className="fixed pointer-events-none z-[1000] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+            style={{
+              left: `${cursorPosition.x}px`,
+              top: `${cursorPosition.y}px`,
+              fontSize: '40px', // Larger size for more prominence
+              filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))', // Enhanced glow
+              animation: 'sunPulse 0.6s infinite', // Faster, more dynamic pulse
+              willChange: 'transform, left, top',
+            }}
+          >
+            🌞
+          </div>
+        )}
 
-      <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
-        <a
-          href="mailto:contact@eriks.design"
-          className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
-                    text-white 
-                    hover:scale-105
-                    active:scale-95
-                    cursor-pointer transition-all duration-200
-                    touch-manipulation"
+        <style jsx global>{`
+          @keyframes sunPulse {
+            0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+            50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
+            100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+          }
+        `}</style>
+
+        <h1
+          className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
+                    text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
+                    text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
           style={{
-            fontFamily: 'SF Pro Rounded, system-ui, sans-serif',
-            background: p3Blue,
-            backgroundColor: fallbackBlue,
+            fontFamily: 'SF Pro Rounded, system-ui, sans-serif'
           }}
-          onClick={(e) => e.stopPropagation()}
-          aria-label="Contact via email"
         >
-          Contact
-        </a>
-      </div>
-    </main>
+          Coming soon™
+        </h1>
+
+        <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
+          <a
+            href="mailto:contact@eriks.design"
+            className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+                      text-white 
+                      hover:scale-105
+                      active:scale-95
+                      cursor-pointer transition-all duration-200
+                      touch-manipulation"
+            style={{
+              fontFamily: 'SF Pro Rounded, system-ui, sans-serif',
+              background: p3Blue,
+              backgroundColor: fallbackBlue,
+            }}
+            onClick={(e) => e.stopPropagation()}
+            aria-label="Contact via email"
+          >
+            Contact
+          </a>
+        </div>
+      </main>
+      
+      {/* Vercel Analytics */}
+      <Analytics />
+    </>
   )
 } 
