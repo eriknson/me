@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { Analytics } from '@vercel/analytics/react'
 
-// Heart interface 
+// Heart interface for animation 
 interface Heart {
   id: number
   x: number
@@ -11,12 +11,12 @@ interface Heart {
   size: number
   rotation: number
   opacity: number
-  element: HTMLDivElement
   velocity: {
     x: number
     y: number
   }
   created: number
+  element?: HTMLDivElement // Element for DOM-based hearts (desktop)
 }
 
 // Cursor states
@@ -24,6 +24,7 @@ type CursorState = 'default' | 'pointer' | 'active'
 
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const heartsRef = useRef<Heart[]>([])
   const heartIdRef = useRef(0)
@@ -36,20 +37,54 @@ export default function Home() {
   const [cursorState, setCursorState] = useState<CursorState>('default')
   const cursorRef = useRef<HTMLDivElement>(null)
   
-  // Maximum number of hearts to allow on screen for performance
-  const MAX_HEARTS = isMobile ? 15 : 50; // Reduced for mobile for better performance
+  // Element pool for DOM hearts on desktop
+  const elementsPoolRef = useRef<HTMLDivElement[]>([]);
   
-  // Initial pre-populated pool size
-  const INITIAL_POOL_SIZE = isMobile ? 10 : 20;
+  // Maximum number of hearts to allow for performance
+  const MAX_HEARTS = isMobile ? 15 : 30;
+  
+  // Initial pool size for DOM hearts
+  const INITIAL_POOL_SIZE = 20;
+  
+  // Reference for select element
+  const selectRef = useRef<HTMLSelectElement>(null);
   
   // Check if device is mobile
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      const mobile = window.innerWidth < 768;
+      setIsMobile(mobile);
       
       // Adjust viewport height for mobile browsers
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
+      
+      // If we're on mobile, resize canvas
+      if (mobile && canvasRef.current) {
+        canvasRef.current.width = window.innerWidth;
+        canvasRef.current.height = window.innerHeight;
+      }
+      
+      // If we're changing from mobile to desktop or vice versa, we need to clean up
+      // and reinitialize the appropriate animation system
+      if (mobile !== isMobile) {
+        // Clean up existing hearts
+        heartsRef.current.forEach(heart => {
+          if (!mobile && heart.element) {
+            // If switching to mobile, remove DOM elements
+            if (heart.element.parentNode) {
+              heart.element.parentNode.removeChild(heart.element);
+            }
+          }
+        });
+        
+        heartsRef.current = [];
+        
+        if (!mobile) {
+          // If switching to desktop, initialize DOM element pool
+          initializeElementPool();
+        }
+      }
     };
     
     checkMobile();
@@ -58,7 +93,7 @@ export default function Home() {
     return () => {
       window.removeEventListener('resize', checkMobile);
     };
-  }, []);
+  }, [isMobile]);
 
   // Custom cursor implementation - only for non-mobile
   useEffect(() => {
@@ -90,12 +125,9 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Element pool for better performance - reuse elements instead of creating new ones
-  const elementsPoolRef = useRef<HTMLDivElement[]>([]);
-  
-  // Pre-populate element pool to prevent lag during first interactions
-  useEffect(() => {
-    // Clear any existing pool
+  // Pre-populate element pool for DOM hearts on desktop
+  const initializeElementPool = () => {
+    // Clean up any existing elements
     elementsPoolRef.current.forEach(element => {
       if (element.parentNode) {
         element.parentNode.removeChild(element);
@@ -107,19 +139,30 @@ export default function Home() {
     // Create initial pool of elements
     for (let i = 0; i < INITIAL_POOL_SIZE; i++) {
       const element = document.createElement('div');
-      element.innerText = '💛'; // Yellow heart emoji
+      element.innerText = '💛';
       element.setAttribute('aria-hidden', 'true');
-      element.style.position = 'fixed';
-      element.style.zIndex = '50';
+      element.style.position = 'absolute'; // Change to absolute positioning
+      element.style.zIndex = '20'; // Lower than the button (z-100)
       element.style.pointerEvents = 'none';
-      element.style.willChange = 'transform, opacity';
+      element.style.transform = 'translateZ(0)'; // Force GPU acceleration
+      element.style.backfaceVisibility = 'hidden'; // Reduce visual artifacts
+      element.style.willChange = 'transform, opacity'; // Hint to browser
       element.style.display = 'none'; // Initially hidden
-      document.body.appendChild(element);
+      
+      // Apply better rendering for emojis
+      element.style.fontFamily = 'Apple Color Emoji, Segoe UI Emoji, NotoColorEmoji, Segoe UI Symbol, Android Emoji, EmojiSymbols';
+      
+      // Append hearts to the container instead of body for proper positioning
+      if (containerRef.current) {
+        containerRef.current.appendChild(element);
+      } else {
+        document.body.appendChild(element);
+      }
       elementsPoolRef.current.push(element);
     }
-  }, []);
+  };
   
-  // Get or create an element from the pool
+  // Get heart element from pool for DOM hearts
   const getHeartElement = (): HTMLDivElement => {
     if (elementsPoolRef.current.length > 0) {
       // Reuse element from pool
@@ -130,171 +173,196 @@ export default function Home() {
     } else {
       // Create new element
       const element = document.createElement('div');
-      element.innerText = '💛'; // Yellow heart emoji
-      element.setAttribute('aria-hidden', 'true'); // Hide from screen readers
-      element.style.position = 'fixed';
-      element.style.zIndex = '50';
+      element.innerText = '💛';
+      element.setAttribute('aria-hidden', 'true');
+      element.style.position = 'absolute'; // Change to absolute positioning
+      element.style.zIndex = '20'; // Lower than the button
       element.style.pointerEvents = 'none';
-      element.style.willChange = 'transform, opacity';
-      document.body.appendChild(element);
+      element.style.transform = 'translateZ(0)'; // Force GPU acceleration
+      element.style.backfaceVisibility = 'hidden'; // Reduce visual artifacts
+      element.style.willChange = 'transform, opacity'; // Hint to browser
+      
+      // Apply better rendering for emojis
+      element.style.fontFamily = 'Apple Color Emoji, Segoe UI Emoji, NotoColorEmoji, Segoe UI Symbol, Android Emoji, EmojiSymbols';
+      
+      // Append hearts to the container instead of body for proper positioning
+      if (containerRef.current) {
+        containerRef.current.appendChild(element);
+      } else {
+        document.body.appendChild(element);
+      }
       return element;
     }
   };
   
-  // Return element to pool for reuse
+  // Return element to pool
   const returnElementToPool = (element: HTMLDivElement) => {
-    // Hide but keep in DOM for reuse
     element.style.display = 'none';
     elementsPoolRef.current.push(element);
   };
 
-  // Create heart element with optimized reuse
+  // Create heart object - for both canvas and DOM
   const createHeart = (x: number, y: number) => {
     const id = heartIdRef.current++;
-    const size = isMobile ? 24 + Math.random() * 8 : 35 + Math.random() * 15; // Smaller hearts on mobile for better performance
+    const size = isMobile 
+      ? 30 + Math.random() * 10 
+      : 40 + Math.random() * 20; // Restored larger size for desktop
+    
     const angle = Math.random() * Math.PI * 2;
-    const speed = isMobile ? 3 + Math.random() * 2 : 2 + Math.random() * 2; // Increased initial speed on mobile
+    const speed = isMobile 
+      ? 3.5 + Math.random() * 2.5 
+      : 4 + Math.random() * 4; // Restored faster speed for desktop
+    
     const rotation = Math.random() * 360;
     
-    // Get heart element from pool
-    const element = getHeartElement();
-    
-    // Set position correctly, we need both the left/top AND the transform
-    element.style.left = `${x}px`;
-    element.style.top = `${y}px`;
-    element.style.fontSize = `${size}px`;
-    element.style.opacity = '1';
-    element.style.transform = `rotate(${rotation}deg)`;
-    
-    // Create heart object
     const heart: Heart = {
       id,
-      x, // Initial x position is the cursor x
-      y, // Initial y position is the cursor y
+      x,
+      y,
       size,
       rotation,
       opacity: 1,
-      element,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 5.0 : 2.5) // Much more initial boost on mobile for faster movement
+        y: Math.sin(angle) * speed - (isMobile ? 5.0 : 4.5) // Restored greater lift for desktop
       },
       created: Date.now()
     };
+    
+    // If desktop, attach a DOM element
+    if (!isMobile) {
+      const element = getHeartElement();
+      element.style.fontSize = `${size}px`;
+      element.style.opacity = '1';
+      // Only set the initial position with transform
+      element.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotation}deg)`;
+      heart.element = element;
+    }
     
     heartsRef.current.push(heart);
     return heart;
   };
   
-  // More efficient update with throttled calculations
+  // Render hearts on canvas (mobile only)
+  const renderHearts = () => {
+    if (!isMobile) return; // Skip on desktop
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
+    if (!ctx) return;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Draw hearts
+    heartsRef.current.forEach(heart => {
+      ctx.save();
+      
+      // Set opacity
+      ctx.globalAlpha = heart.opacity;
+      
+      // Position and rotation
+      ctx.translate(heart.x + heart.size/2, heart.y + heart.size/2);
+      ctx.rotate(heart.rotation * Math.PI / 180);
+      
+      // Draw the emoji
+      ctx.font = `${heart.size}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('💛', 0, 0);
+      
+      ctx.restore();
+    });
+  };
+  
+  // Update hearts animation
   const updateHearts = () => {
     const now = Date.now();
-    const lifespan = isMobile ? 1500 : 5000; // Significantly reduced lifespan on mobile for snappier animations
-    const fadeTime = isMobile ? 300 : 500; // Shorter fade time on mobile
+    const lifespan = isMobile ? 2000 : 3500; // Restored shorter lifespan for desktop
+    const fadeTime = isMobile ? 300 : 500;
     
-    // Filter and update hearts in one pass for better performance
+    // Filter and update hearts
     const updatedHearts: Heart[] = [];
-    
-    // On mobile, skip frames for better performance and lower CPU usage
-    if (isMobile && now % 3 !== 0) { // Skip more frames on mobile (process only every 3rd frame)
-      heartsRef.current.forEach(heart => {
-        updatedHearts.push(heart);
-      });
-      rafRef.current = requestAnimationFrame(updateHearts);
-      return;
-    }
     
     for (const heart of heartsRef.current) {
       // Check age
       const age = now - heart.created;
       if (age > lifespan + fadeTime) {
-        returnElementToPool(heart.element);
-        continue; // Skip to next heart
+        // Clean up DOM element on desktop
+        if (!isMobile && heart.element) {
+          returnElementToPool(heart.element);
+        }
+        continue; // Remove heart
       }
       
       // Handle fade out
       if (age > lifespan) {
         heart.opacity = 1 - (age - lifespan) / fadeTime;
-        heart.element.style.opacity = heart.opacity.toString();
+        // Update DOM element opacity on desktop
+        if (!isMobile && heart.element) {
+          heart.element.style.opacity = heart.opacity.toString();
+        }
       }
       
-      // Update position with gravity - use higher values on mobile for faster movement
-      heart.velocity.y += isMobile ? 0.3 : 0.1; // Much more gravity on mobile for faster movement
+      // Gravity and physics - restored faster falling for desktop
+      heart.velocity.y += isMobile ? 0.25 : 0.22;
       
-      // Apply velocity with step size based on device for consistent behavior
-      const stepMultiplier = isMobile ? 1.2 : 1.0; // Move faster on mobile
-      heart.x += heart.velocity.x * stepMultiplier;
-      heart.y += heart.velocity.y * stepMultiplier;
+      // Apply velocity with custom multiplier per platform - restored faster speed for desktop
+      const speedMultiplier = isMobile ? 1.1 : 1.4;
+      heart.x += heart.velocity.x * speedMultiplier;
+      heart.y += heart.velocity.y * speedMultiplier;
       
-      // Floor collision
+      // Floor collision with bounce
       if (heart.y + heart.size > window.innerHeight) {
         heart.y = window.innerHeight - heart.size;
-        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.6 : 0.3); // More energetic bounce on mobile
+        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.65 : 0.6); // Restored bouncier for desktop
         
-        // Stop if velocity is very low (optimization)
-        if (Math.abs(heart.velocity.y) < 0.8) { // Higher threshold on mobile
+        // Stop if velocity is very low
+        if (Math.abs(heart.velocity.y) < (isMobile ? 0.9 : 1.0)) { // Restored desktop value
           heart.velocity.y = 0;
-          // Also reduce x velocity when settled for better performance
-          heart.velocity.x *= isMobile ? 0.9 : 0.9;
+          heart.velocity.x *= 0.85; // Same reduction for both
         }
       }
       
-      // On mobile, simplified wall collision for better performance
-      if (isMobile) {
-        if (heart.x < 0) {
-          heart.x = 0;
-          heart.velocity.x = Math.abs(heart.velocity.x) * 0.6;
-        } else if (heart.x + heart.size > window.innerWidth) {
-          heart.x = window.innerWidth - heart.size;
-          heart.velocity.x = -Math.abs(heart.velocity.x) * 0.6;
-        }
-      } else {
-        // More detailed collision for desktop
-        if ((heart.x < 0 || heart.x + heart.size > window.innerWidth) && Math.abs(heart.velocity.x) > 0.1) {
-          heart.velocity.x = -heart.velocity.x * 0.3;
-        }
+      // Wall collisions
+      if ((heart.x < 0 || heart.x + heart.size > window.innerWidth) && Math.abs(heart.velocity.x) > 0.1) {
+        heart.velocity.x = -heart.velocity.x * 0.4; // Same for both platforms
       }
       
       // Constrain within window
       heart.x = Math.max(0, Math.min(window.innerWidth - heart.size, heart.x));
       
-      // Apply faster rotation on mobile
+      // Update rotation based on horizontal velocity
       if (Math.abs(heart.velocity.x) > 0.1) {
-        heart.rotation += heart.velocity.x * (isMobile ? 0.5 : 0.2); // More rotation on mobile
+        heart.rotation += heart.velocity.x * 0.3; // Same for both platforms
       }
       
-      // Update DOM element position - must set left/top not just transform
-      heart.element.style.left = `${heart.x}px`;
-      heart.element.style.top = `${heart.y}px`;
-      heart.element.style.transform = `rotate(${heart.rotation}deg)`;
+      // Update DOM element position on desktop - use transform for better performance
+      if (!isMobile && heart.element) {
+        // Use translate3d for better GPU acceleration combined with rotation
+        heart.element.style.transform = `translate3d(${heart.x}px, ${heart.y}px, 0) rotate(${heart.rotation}deg)`;
+      }
       
       updatedHearts.push(heart);
     }
     
     heartsRef.current = updatedHearts;
-    rafRef.current = requestAnimationFrame(updateHearts);
-  };
-  
-  // Staggered heart creation to reduce lag spikes
-  const staggeredHeartCreation = (x: number, y: number, count: number, currentIndex = 0) => {
-    if (currentIndex >= count) return;
     
-    // Create one heart immediately
-    createHeart(x, y);
-    
-    // Schedule the next heart creation with a slight delay
-    if (currentIndex < count - 1) {
-      setTimeout(() => {
-        staggeredHeartCreation(x, y, count, currentIndex + 1);
-      }, isMobile ? 2 : 5); // Much quicker spawn on mobile
+    // For mobile, render on canvas
+    if (isMobile) {
+      renderHearts();
     }
+    
+    // Continue animation loop
+    rafRef.current = requestAnimationFrame(updateHearts);
   };
   
   // Spawn hearts at position with throttling
   const spawnHearts = (x: number, y: number) => {
     const now = Date.now();
-    // Throttle spawning for better performance
-    const spawnThrottle = isMobile ? 75 : 60; // Less throttle on mobile for more responsive feedback
+    const spawnThrottle = isMobile ? 60 : 40;
     
     if (now - lastSpawnTimeRef.current < spawnThrottle) {
       return;
@@ -303,26 +371,23 @@ export default function Home() {
     lastSpawnTimeRef.current = now;
     
     // Limit total hearts for performance
-    if (heartsRef.current.length >= MAX_HEARTS) {
-      // Remove oldest hearts when at limit (more aggressively)
-      const toRemove = Math.min(
-        Math.max(heartsRef.current.length - MAX_HEARTS + (isMobile ? 3 : 5), 0), 
-        isMobile ? 5 : 10
-      );
-      
-      for (let i = 0; i < toRemove; i++) {
-        if (heartsRef.current.length > 0) {
-          const heart = heartsRef.current.shift()!;
-          returnElementToPool(heart.element);
-        }
+    while (heartsRef.current.length >= MAX_HEARTS) {
+      const oldestHeart = heartsRef.current.shift()!;
+      if (!isMobile && oldestHeart.element) {
+        returnElementToPool(oldestHeart.element);
       }
     }
     
-    // Spawn fewer hearts for better performance, especially on mobile
-    const count = isMobile ? 2 : 3; // Keep count low on mobile
+    // Simple count values - avoid staggered creation on desktop
+    const count = isMobile ? 2 : 3;
     
-    // Use staggered creation instead of all at once
-    staggeredHeartCreation(x, y, count);
+    // Create hearts immediately for both platforms
+    for (let i = 0; i < count; i++) {
+      createHeart(
+        x + (Math.random() - 0.5) * 20, // More spread
+        y + (Math.random() - 0.5) * 20  // More spread
+      );
+    }
   };
   
   // Handle drag events for continuous spawning
@@ -330,16 +395,31 @@ export default function Home() {
     if (!isActiveRef.current) return;
     
     // Don't handle events on the contact button
-    if (e.target && (e.target as Element).closest('a')) return;
+    if (e.target && (e.target as Element).closest('a, select, button')) return;
     
-    // Get position
-    const x = 'touches' in e 
-      ? e.touches[0].clientX 
-      : (e as MouseEvent).clientX;
+    // Get position relative to the container for DOM-based hearts
+    let x, y;
     
-    const y = 'touches' in e 
-      ? e.touches[0].clientY 
-      : (e as MouseEvent).clientY;
+    if (!isMobile && containerRef.current) {
+      // For desktop, get coordinates relative to container
+      const rect = containerRef.current.getBoundingClientRect();
+      x = 'touches' in e 
+        ? e.touches[0].clientX - rect.left
+        : (e as MouseEvent).clientX - rect.left;
+      
+      y = 'touches' in e 
+        ? e.touches[0].clientY - rect.top
+        : (e as MouseEvent).clientY - rect.top;
+    } else {
+      // For mobile, use client coordinates (canvas is full viewport)
+      x = 'touches' in e 
+        ? e.touches[0].clientX 
+        : (e as MouseEvent).clientX;
+      
+      y = 'touches' in e 
+        ? e.touches[0].clientY 
+        : (e as MouseEvent).clientY;
+    }
     
     // Spawn hearts
     spawnHearts(x, y);
@@ -350,9 +430,34 @@ export default function Home() {
     }
   };
   
-  // Event handlers with touch/mouse unification
+  // Setup animation and event listeners
   useEffect(() => {
-    // Start handler
+    // Initialize the appropriate system
+    if (isMobile) {
+      // Initialize canvas for mobile
+      if (canvasRef.current) {
+        canvasRef.current.width = window.innerWidth;
+        canvasRef.current.height = window.innerHeight;
+        
+        // For high DPI displays
+        const dpr = window.devicePixelRatio || 1;
+        if (dpr > 1) {
+          const ctx = canvasRef.current.getContext('2d');
+          if (ctx) {
+            canvasRef.current.style.width = `${window.innerWidth}px`;
+            canvasRef.current.style.height = `${window.innerHeight}px`;
+            canvasRef.current.width = window.innerWidth * dpr;
+            canvasRef.current.height = window.innerHeight * dpr;
+            ctx.scale(dpr, dpr);
+          }
+        }
+      }
+    } else {
+      // Initialize DOM element pool for desktop
+      initializeElementPool();
+    }
+    
+    // Event handlers
     const handleStart = (e: MouseEvent | TouchEvent) => {
       isActiveRef.current = true;
       
@@ -363,7 +468,7 @@ export default function Home() {
       if ('touches' in e && 
           e.target && 
           (e.target as Element).closest('main') && 
-          !(e.target as Element).closest('a') && 
+          !(e.target as Element).closest('a, select, button') && 
           e.cancelable) {
         e.preventDefault();
       }
@@ -386,19 +491,21 @@ export default function Home() {
     window.addEventListener('touchmove', handleDrag, { passive: false });
     window.addEventListener('touchend', handleEnd);
     
+    // Clean up on unmount
     return () => {
-      // Cleanup
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
       
-      // Remove all hearts from DOM or return to pool
+      // Clean up hearts
       heartsRef.current.forEach(heart => {
-        returnElementToPool(heart.element);
+        if (!isMobile && heart.element && heart.element.parentNode) {
+          heart.element.parentNode.removeChild(heart.element);
+        }
       });
       heartsRef.current = [];
       
-      // Clean up the element pool on unmount
+      // Clean up element pool
       elementsPoolRef.current.forEach(element => {
         if (element.parentNode) {
           element.parentNode.removeChild(element);
@@ -417,60 +524,168 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Handle redirect for contact options with enhanced mobile support
-  const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement> | Event) => {
-    // Prevent default selection behavior
+  // Handle contact option selection with unified behavior for mobile/desktop
+  const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     e.preventDefault();
     
-    // Get the select element - handle both event types
-    const select = e.target as HTMLSelectElement;
-    const value = select.value;
+    // Get the selected value
+    const value = e.target.value;
     
-    // Immediately reset the select value to prevent label change
-    select.value = 'contact';
+    // Reset to Contact immediately
+    e.target.value = 'contact';
     
-    // Handle navigation based on selection
+    // Handle based on selection
     if (value === 'email') {
-      // Use location.href for more reliable email navigation
-      location.href = 'mailto:contact@eriks.design';
+      // Direct email link for both mobile and desktop - same tab
+      window.location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      // Always try to open in new tab first for both desktop and mobile
-      const newWindow = window.open('https://twitter.com/0xago', '_blank', 'noopener,noreferrer');
-      
-      // Fallback if window.open is blocked or fails
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        // On mobile, redirect in same tab as fallback
-        if (isMobile) {
-          window.location.href = 'https://twitter.com/0xago';
-        } else {
-          // On desktop, try one more time with location.href and target _blank
-          try {
-            // Create a temporary anchor and simulate click
-            const a = document.createElement('a');
-            a.href = 'https://twitter.com/0xago';
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-          } catch (err) {
-            // Last resort fallback
-            window.location.href = 'https://twitter.com/0xago';
+      // For Twitter - open in new tab on both mobile and desktop
+      if (isMobile) {
+        // Try to open in app first (using twitter:// URI scheme), then fall back to web in new tab
+        try {
+          // For iOS/Android devices that have Twitter app installed, attempt to open the app
+          const twitterAppUrl = `twitter://user?screen_name=0xago`;
+          const webUrl = 'https://twitter.com/0xago';
+          
+          // First try to open in a new tab/window (works on most mobile browsers)
+          const newTab = window.open(webUrl, '_blank');
+          
+          // If new tab/window was blocked or not opened, try direct navigation
+          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+            window.location.href = webUrl;
           }
+        } catch (err) {
+          console.error('Failed to open Twitter', err);
+          // Fallback to regular URL in same tab as last resort
+          window.location.href = 'https://twitter.com/0xago';
+        }
+      } else {
+        // Desktop: Use the existing new tab approach
+        try {
+          const a = document.createElement('a');
+          a.href = 'https://twitter.com/0xago';
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+          }, 100);
+        } catch (err) {
+          console.error('Failed to open Twitter in new tab', err);
+          // Fallback to direct navigation if the preferred method fails
+          window.location.href = 'https://twitter.com/0xago';
+        }
+      }
+    } else if (value === 'linkedin') {
+      // For LinkedIn - open in new tab on both mobile and desktop
+      if (isMobile) {
+        // Try to open in app first (using linkedin:// URI scheme), then fall back to web in new tab
+        try {
+          // For iOS/Android devices that have LinkedIn app installed, attempt to open the app
+          const linkedinAppUrl = `linkedin://profile/eriknson`;
+          const webUrl = 'https://www.linkedin.com/in/eriknson/';
+          
+          // First try to open in a new tab/window (works on most mobile browsers)
+          const newTab = window.open(webUrl, '_blank');
+          
+          // If new tab/window was blocked or not opened, try direct navigation
+          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
+            window.location.href = webUrl;
+          }
+        } catch (err) {
+          console.error('Failed to open LinkedIn', err);
+          // Fallback to regular URL in same tab as last resort
+          window.location.href = 'https://www.linkedin.com/in/eriknson/';
+        }
+      } else {
+        // Desktop: Use the existing new tab approach
+        try {
+          const a = document.createElement('a');
+          a.href = 'https://www.linkedin.com/in/eriknson/';
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          setTimeout(() => {
+            document.body.removeChild(a);
+          }, 100);
+        } catch (err) {
+          console.error('Failed to open LinkedIn in new tab', err);
+          // Fallback to direct navigation if the preferred method fails
+          window.location.href = 'https://www.linkedin.com/in/eriknson/';
         }
       }
     }
     
-    // Ensure dropdown is closed on mobile
+    // Ensure select is blurred on mobile to close it properly
     if (isMobile) {
-      try {
-        select.blur();
-      } catch (err) {
-        console.log('Failed to blur select element');
-      }
+      setTimeout(() => {
+        try {
+          e.target.blur();
+        } catch (err) {
+          console.log('Failed to blur select');
+        }
+      }, 100);
     }
   };
+  
+  // Effect to hide "Contact" option on mobile
+  useEffect(() => {
+    function hideContactOptionOnMobile() {
+      if (!selectRef.current) return;
+      
+      const contactOption = selectRef.current.querySelector('option[value="contact"]');
+      if (!contactOption) return;
+      
+      if (window.innerWidth < 768) {
+        // Apply multiple hiding techniques for maximum browser compatibility
+        contactOption.setAttribute('hidden', 'true');
+        contactOption.setAttribute('disabled', 'true');
+        (contactOption as HTMLElement).style.display = 'none';
+        (contactOption as HTMLElement).style.height = '0';
+        (contactOption as HTMLElement).style.padding = '0';
+        (contactOption as HTMLElement).style.opacity = '0';
+        (contactOption as HTMLElement).style.visibility = 'hidden';
+        (contactOption as HTMLElement).style.position = 'absolute';
+        (contactOption as HTMLElement).style.overflow = 'hidden';
+      }
+    }
+    
+    // Delay function for setTimeout inside click handler
+    function delayedHideContactOption() {
+      setTimeout(hideContactOptionOnMobile, 0);
+    }
+    
+    // Initial hide
+    hideContactOptionOnMobile();
+    
+    // Hide on window resize
+    window.addEventListener('resize', hideContactOptionOnMobile);
+    
+    // Critical: hide when select is focused (when mobile browsers build the dropdown)
+    if (selectRef.current) {
+      selectRef.current.addEventListener('focus', hideContactOptionOnMobile);
+      selectRef.current.addEventListener('touchstart', hideContactOptionOnMobile);
+      selectRef.current.addEventListener('mousedown', hideContactOptionOnMobile);
+      
+      // Additional event to catch iOS Safari's dropdown building
+      selectRef.current.addEventListener('click', delayedHideContactOption);
+    }
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('resize', hideContactOptionOnMobile);
+      if (selectRef.current) {
+        selectRef.current.removeEventListener('focus', hideContactOptionOnMobile);
+        selectRef.current.removeEventListener('touchstart', hideContactOptionOnMobile);
+        selectRef.current.removeEventListener('mousedown', hideContactOptionOnMobile);
+        selectRef.current.removeEventListener('click', delayedHideContactOption);
+      }
+    };
+  }, [isMobile]); // Re-run when isMobile changes
   
   // P3 color space vibrant blue with fallback
   const p3Blue = "color(display-p3 0 0.454 1)"; // Vibrant blue in P3 color space
@@ -483,12 +698,21 @@ export default function Home() {
         className="relative h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]" 
         style={{ 
           height: 'calc(var(--vh, 1vh) * 100)',
-          // Use default cursor normally
-          cursor: 'auto'
+          cursor: 'auto',
+          position: 'relative' // Ensure position relative for absolute child positioning
         }}
-        aria-label="Coming soon page with interactive heart animations"
+        aria-label="Work in progress page with interactive heart animations"
       >
-        {/* Custom prayer hands cursor only shows when active */}
+        {/* Canvas for heart animations (mobile only) */}
+        {isMobile && (
+          <canvas 
+            ref={canvasRef}
+            className="absolute top-0 left-0 w-full h-full pointer-events-none"
+            style={{ zIndex: 20 }}
+          />
+        )}
+        
+        {/* Custom sun cursor only shows when active */}
         {!isMobile && cursorState === 'active' && (
           <div 
             ref={cursorRef}
@@ -496,9 +720,9 @@ export default function Home() {
             style={{
               left: `${cursorPosition.x}px`,
               top: `${cursorPosition.y}px`,
-              fontSize: '40px', // Larger size for more prominence
-              filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))', // Enhanced glow
-              animation: 'sunPulse 0.6s infinite', // Faster, more dynamic pulse
+              fontSize: '40px',
+              filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))',
+              animation: 'sunPulse 0.6s infinite',
               willChange: 'transform, left, top',
             }}
           >
@@ -506,7 +730,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Global styles without using styled-jsx */}
+        {/* Global styles */}
         <style dangerouslySetInnerHTML={{ __html: `
           @keyframes sunPulse {
             0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
@@ -521,6 +745,21 @@ export default function Home() {
             -moz-osx-font-smoothing: grayscale;
           }
           
+          /* Font loading with better stability */
+          @font-face {
+            font-family: 'PPMondwest-Regular';
+            src: url('/fonts/PPMondwest-Regular.otf') format('opentype');
+            font-weight: normal;
+            font-style: normal;
+            font-display: block; /* Changed from swap to block to prevent FOUT */
+          }
+          
+          /* Prevent layout shifts by forcing text to use the same dimensions */
+          h1, h2, h3, p, div, span {
+            font-synthesis: none; /* Prevent synthesized font variants */
+            text-rendering: geometricPrecision; /* Better text rendering */
+          }
+          
           /* Select styling to look like a button */
           select.contact-select {
             text-align: center;
@@ -531,6 +770,14 @@ export default function Home() {
             transform: translateZ(0);
             user-select: none;
             cursor: pointer;
+            background-color: #0074FF; /* Standard sRGB fallback */
+          }
+          
+          /* P3 color space support detection and application */
+          @supports (color: color(display-p3 0 0 0)) {
+            select.contact-select {
+              background-color: color(display-p3 0 0.454 1) !important; /* P3 vibrant blue when supported */
+            }
           }
           
           /* Hide all dropdown indicators */
@@ -567,40 +814,77 @@ export default function Home() {
           /* Mobile optimizations */
           @media (max-width: 768px) {
             select.contact-select {
-              min-height: 48px;
-              min-width: 160px;
-              font-size: 18px !important;
-              padding-top: 10px !important;
-              padding-bottom: 10px !important;
+              min-height: 56px;
+              min-width: 200px;
+              font-size: 20px !important;
+              padding-top: 12px !important;
+              padding-bottom: 12px !important;
+              padding-left: 24px !important;
+              padding-right: 24px !important;
             }
             
             select.contact-select option {
-              padding: 14px 15px;
+              padding: 14px 16px;
               font-size: 16px;
             }
-          }
-          
-          /* Hide the contact option label from display */
-          select.contact-select option[value="contact"] {
-            display: none;
+            
+            /* Ultra aggressive hiding for the Contact option on mobile */
+            option[value="contact"] {
+              display: none !important;
+              height: 0 !important;
+              max-height: 0 !important;
+              font-size: 0 !important;
+              padding: 0 !important;
+              margin: 0 !important;
+              border: 0 !important;
+              overflow: hidden !important;
+              opacity: 0 !important;
+              visibility: hidden !important;
+              position: absolute !important;
+              pointer-events: none !important;
+              clip: rect(0,0,0,0) !important;
+              transform: translateY(-100%) !important;
+            }
+            
+            /* Make sure the Get in touch option stands out as a header */
+            option[value="get-in-touch"] {
+              background-color: #f8f8f8 !important;
+              color: #666 !important;
+              font-weight: 600 !important;
+              border-bottom: 1px solid #eee !important;
+            }
+            
+            /* Ensure Email and Twitter options are clearly selectable */
+            option[value="email"],
+            option[value="twitter"],
+            option[value="linkedin"] {
+              padding: 16px !important;
+              font-size: 16px !important;
+              background-color: white !important;
+              color: #333 !important;
+            }
           }
         `}} />
 
         <h1
           className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
-                    text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
+                    text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-10
                     text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
           style={{
-            fontFamily: '"PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif'
+            fontFamily: '"PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+            transform: 'translate3d(-50%, -50%, 0)', // Force hardware acceleration
+            willChange: 'transform', // Hint to browser for optimization
+            fontSynthesis: 'none' // Prevent synthetic font fallbacks
           }}
         >
           Work in Progress
         </h1>
 
-        <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
-          {/* Native select styled as a button */}
+        <div className="absolute bottom-[12vh] left-0 right-0 flex justify-center items-center z-[100]">
+          {/* Native select on both mobile and desktop */}
           <div className="relative">
             <select
+              ref={selectRef}
               onChange={handleContactOptionChange}
               onClick={(e) => {
                 // Prevent default option selection behavior
@@ -623,32 +907,21 @@ export default function Home() {
                       border-0 outline-none focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50"
               style={{
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
-                background: p3Blue,
-                backgroundColor: fallbackBlue,
                 paddingRight: '18px',
                 paddingLeft: '18px',
                 ...(isMobile ? { 
-                  fontSize: '18px',
+                  fontSize: '20px',
                   touchAction: 'manipulation',
                   userSelect: 'none',
                   fontWeight: 600,
-                  minHeight: '48px',
-                  minWidth: '160px',
+                  minHeight: '56px',
+                  minWidth: '200px',
+                  paddingLeft: '24px',
+                  paddingRight: '24px',
                 } : {}),
               }}
               aria-label="Contact options"
               defaultValue="contact"
-              // Additional mobile support
-              onTouchStart={(e) => {
-                if (isMobile) {
-                  try {
-                    // Ensure focus happens on touch
-                    e.currentTarget.focus();
-                  } catch (err) {
-                    console.log('Touch focus failed');
-                  }
-                }
-              }}
               // Make sure the label always stays as "Contact"
               onFocus={(e) => {
                 e.currentTarget.value = 'contact';
@@ -656,13 +929,40 @@ export default function Home() {
               onBlur={(e) => {
                 e.currentTarget.value = 'contact';
               }}
+              // Always force the value to be "contact" for the label
+              value="contact"
             >
               {/* Contact option - always selected but hidden in dropdown */}
-              <option value="contact" disabled>Get in touch</option>
+              <option 
+                value="contact" 
+                disabled 
+                hidden
+                style={{
+                  display: 'none',
+                  visibility: 'hidden'
+                }}
+                id="contact-option" // Adding ID for easier targeting
+              >
+                Contact
+              </option>
               
+              {/* Add a disabled Get in touch option for the dropdown */}
+              { !isMobile && <option 
+                value="get-in-touch" 
+                disabled
+                style={{ 
+                  fontWeight: 'bold', 
+                  color: '#777',
+                  backgroundColor: '#f9f9f9' 
+                }}
+              >
+                Get in touch
+              </option>
+              }
               {/* Real options */}
               <option value="email">Email</option>
               <option value="twitter">Twitter</option>
+              <option value="linkedin">LinkedIn</option>
             </select>
           </div>
         </div>
