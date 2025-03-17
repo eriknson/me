@@ -62,7 +62,7 @@ export default function Home() {
     } else {
       // Create new element
       const element = document.createElement('div');
-      element.innerText = '❤️';
+      element.innerText = '💛'; // Yellow heart emoji
       element.setAttribute('aria-hidden', 'true'); // Hide from screen readers
       element.style.position = 'fixed';
       element.style.zIndex = '50';
@@ -83,7 +83,7 @@ export default function Home() {
   // Create heart element with optimized reuse
   const createHeart = (x: number, y: number) => {
     const id = heartIdRef.current++;
-    const size = isMobile ? 25 + Math.random() * 10 : 30 + Math.random() * 15;
+    const size = isMobile ? 28 + Math.random() * 10 : 35 + Math.random() * 15; // Slightly larger for better visibility
     const angle = Math.random() * Math.PI * 2;
     const speed = 2 + Math.random() * 3;
     const rotation = Math.random() * 360;
@@ -307,6 +307,10 @@ export default function Home() {
     };
   }, [isMobile]);
 
+  // P3 color space vibrant blue with fallback
+  const p3Blue = "color(display-p3 0 0.454 1)"; // Vibrant blue in P3 color space
+  const fallbackBlue = "#0074FF"; // Standard sRGB fallback
+
   return (
     <main 
       ref={containerRef}
@@ -328,13 +332,17 @@ export default function Home() {
       <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
         <a
           href="mailto:contact@eriks.design"
-          className="px-6 py-3 md:px-5 md:py-2 rounded-full text-base md:text-sm font-medium
-                    bg-[#007AFF] text-white 
-                    hover:bg-[#0071F4] hover:scale-105
-                    active:bg-[#0058CC] active:scale-95
+          className="px-8 py-4 md:px-6 md:py-3 rounded-full text-lg md:text-base font-bold
+                    text-white 
+                    hover:scale-105
+                    active:scale-95
                     cursor-pointer transition-all duration-200
                     touch-manipulation"
-          style={{ fontFamily: 'SF Pro Rounded, system-ui, sans-serif' }}
+          style={{
+            fontFamily: 'SF Pro Rounded, system-ui, sans-serif',
+            background: p3Blue,
+            backgroundColor: fallbackBlue,
+          }}
           onClick={(e) => e.stopPropagation()}
           aria-label="Contact via email"
         >
