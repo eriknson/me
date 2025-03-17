@@ -465,7 +465,8 @@ export default function Home() {
           </div>
         )}
 
-        <style jsx global>{`
+        {/* Global styles without using styled-jsx */}
+        <style dangerouslySetInnerHTML={{ __html: `
           @keyframes sunPulse {
             0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
             50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
@@ -488,7 +489,7 @@ export default function Home() {
             -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
           }
           
-          /* Style select options - note that this only works in some browsers */
+          /* Style select options */
           select.contact-select option {
             background-color: white;
             color: #333;
@@ -497,13 +498,32 @@ export default function Home() {
             font-size: 14px;
           }
           
+          /* Style to hide the first option */
+          select.contact-select option:first-child {
+            display: none;
+          }
+          
           /* Fix for iOS specific issues */
           @supports (-webkit-touch-callout: none) {
             select.contact-select {
               font-size: 16px; /* Prevent auto-zoom on focus */
             }
           }
-        `}</style>
+          
+          /* Additional select mobile styles */
+          select {
+            min-width: 120px;
+          }
+          
+          @media (max-width: 768px) {
+            select {
+              font-size: 16px; /* Prevents iOS zoom on focus */
+              min-width: 110px;
+              padding-left: 16px;
+              padding-right: 16px;
+            }
+          }
+        `}} />
 
         <h1
           className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
@@ -541,26 +561,10 @@ export default function Home() {
               aria-label="Contact options"
               defaultValue=""
             >
-              <option value="" disabled>Contact</option>
+              <option value="" disabled hidden>Contact</option>
               <option value="email">Email</option>
               <option value="twitter">Twitter</option>
             </select>
-
-            {/* Style for better mobile handling */}
-            <style jsx>{`
-              select {
-                min-width: 120px;
-              }
-              
-              @media (max-width: 768px) {
-                select {
-                  font-size: 16px; /* Prevents iOS zoom on focus */
-                  min-width: 110px;
-                  padding-left: 16px;
-                  padding-right: 16px;
-                }
-              }
-            `}</style>
           </div>
         </div>
       </main>
