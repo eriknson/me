@@ -211,7 +211,7 @@ export default function Home() {
     const angle = Math.random() * Math.PI * 2;
     const speed = isMobile 
       ? 3.5 + Math.random() * 2.5 
-      : 4 + Math.random() * 4; // Restored faster speed for desktop
+      : 3 + Math.random() * 2.5; // Reduced speed for desktop to feel more natural
     
     const rotation = Math.random() * 360;
     
@@ -224,7 +224,7 @@ export default function Home() {
       opacity: 1,
       velocity: {
         x: Math.cos(angle) * speed,
-        y: Math.sin(angle) * speed - (isMobile ? 5.0 : 4.5) // Restored greater lift for desktop
+        y: Math.sin(angle) * speed - (isMobile ? 5.0 : 3.8) // Reduced lift for desktop for more natural arc
       },
       created: Date.now()
     };
@@ -280,8 +280,8 @@ export default function Home() {
   // Update hearts animation
   const updateHearts = () => {
     const now = Date.now();
-    const lifespan = isMobile ? 2000 : 3500; // Restored shorter lifespan for desktop
-    const fadeTime = isMobile ? 300 : 500;
+    const lifespan = isMobile ? 2000 : 4000; // Increased lifespan for desktop for slower animation
+    const fadeTime = isMobile ? 300 : 600; // Increased fade time for desktop for smoother transition
     
     // Filter and update hearts
     const updatedHearts: Heart[] = [];
@@ -306,18 +306,18 @@ export default function Home() {
         }
       }
       
-      // Gravity and physics - restored faster falling for desktop
-      heart.velocity.y += isMobile ? 0.25 : 0.22;
+      // Gravity and physics - slowed down for desktop
+      heart.velocity.y += isMobile ? 0.25 : 0.15; // Reduced gravity acceleration for desktop
       
-      // Apply velocity with custom multiplier per platform - restored faster speed for desktop
-      const speedMultiplier = isMobile ? 1.1 : 1.4;
+      // Apply velocity with custom multiplier per platform - reduced speed for desktop
+      const speedMultiplier = isMobile ? 1.1 : 1.05; // Lower multiplier for desktop
       heart.x += heart.velocity.x * speedMultiplier;
       heart.y += heart.velocity.y * speedMultiplier;
       
       // Floor collision with bounce
       if (heart.y + heart.size > window.innerHeight) {
         heart.y = window.innerHeight - heart.size;
-        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.65 : 0.6); // Restored bouncier for desktop
+        heart.velocity.y = -heart.velocity.y * (isMobile ? 0.65 : 0.5); // Less bouncy for desktop for more natural feel
         
         // Stop if velocity is very low
         if (Math.abs(heart.velocity.y) < (isMobile ? 0.9 : 1.0)) { // Restored desktop value
