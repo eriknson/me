@@ -676,18 +676,9 @@ export default function Home() {
           
           /* Global font settings */
           html, body {
-            font-family: "PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-family: var(--font-mondwest), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-          }
-          
-          /* Font loading with better stability */
-          @font-face {
-            font-family: 'PPMondwest-Regular';
-            src: url('/fonts/PPMondwest-Regular.otf') format('opentype');
-            font-weight: normal;
-            font-style: normal;
-            font-display: block; /* Changed from swap to block to prevent FOUT */
           }
           
           /* Prevent layout shifts by forcing text to use the same dimensions */
@@ -807,7 +798,7 @@ export default function Home() {
                     text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-10
                     text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
           style={{
-            fontFamily: '"PPMondwest-Regular", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
+            fontFamily: 'var(--font-mondwest), -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
             transform: 'translate3d(-50%, -50%, 0)', // Force hardware acceleration
             willChange: 'transform', // Hint to browser for optimization
             fontSynthesis: 'none' // Prevent synthetic font fallbacks

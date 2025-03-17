@@ -1,12 +1,13 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { mondwest } from '@/lib/fonts'
 
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
   title: 'eriks.design',
-  description: 'Product Designer based out of Lisbon, Portugal. I work together with ambitious teams to create world-class user experiences.',
+  description: 'Coming soon',
 }
 
 export default function RootLayout({
@@ -15,8 +16,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html lang="en" className={`${mondwest.variable} ${inter.className}`}>
+      <body>{children}</body>
     </html>
   )
 } 
