@@ -24,11 +24,11 @@ interface Heart {
 }
 
 // Configuration constants
-const HEART_LIFETIME = 3000
-const FADE_DURATION = 1000
+const HEART_LIFETIME = 2000
+const FADE_DURATION = 600
 const SPAWN_RATE_DESKTOP = 24
-const SPAWN_RATE_MOBILE = 150
-const MAX_HEARTS_MOBILE = 12
+const SPAWN_RATE_MOBILE = 50
+const MAX_HEARTS_MOBILE = 20
 
 export default function Home() {
   const rafRef = useRef<number>()
@@ -311,22 +311,22 @@ export default function Home() {
             const opacity = age > HEART_LIFETIME ? 
               Math.max(0, 1 - (age - HEART_LIFETIME) / FADE_DURATION) : 1
             
-            // Create animation variation based on heart id
-            const animIndex = heart.id % 5
-            const animClass = `heart-anim-${animIndex}`
-            const scaleVar = 0.5 + (heart.id % 4) * 0.1
-            const rotateVar = (heart.id % 7) * 30
+            // Determine style based on heart id for variety
+            const animIndex = heart.id % 6
+            const size = 0.7 + (heart.id % 5) * 0.1 // Slightly larger hearts
+            const rotate = (heart.id % 8) * 45 // More rotation variation
             
             return (
               <div
                 key={heart.id}
-                className={`fixed pointer-events-none text-xl z-50 ${animClass}`}
+                className="fixed pointer-events-none text-xl z-50 will-change-transform"
                 style={{
                   left: `${heart.x}px`,
                   top: `${heart.y}px`,
                   opacity,
-                  transform: `scale(${scaleVar}) rotate(${rotateVar}deg)`,
-                  animation: `float-${animIndex} 2s forwards`,
+                  transform: `scale(${size}) rotate(${rotate}deg)`,
+                  animation: `pop-${animIndex} 0.3s forwards`, // Much faster animation
+                  willChange: 'transform, opacity'
                 }}
               >
                 ❤️
@@ -336,28 +336,38 @@ export default function Home() {
         </div>
       )}
 
-      {/* CSS animations for mobile hearts */}
+      {/* CSS animations for mobile hearts - faster & snappier */}
       {isMobile && (
         <style jsx global>{`
-          @keyframes float-0 {
-            0% { transform: scale(0) translate(0, 0); }
-            100% { transform: scale(0.6) translate(0, 40px); }
+          @keyframes pop-0 {
+            0% { transform: scale(0); }
+            60% { transform: scale(${1.0 + Math.random() * 0.3}); }
+            100% { transform: scale(${0.7 + Math.random() * 0.3}); }
           }
-          @keyframes float-1 {
-            0% { transform: scale(0) translate(0, 0); }
-            100% { transform: scale(0.5) translate(-20px, 50px); }
+          @keyframes pop-1 {
+            0% { transform: scale(0) rotate(0deg); }
+            50% { transform: scale(${1.1 + Math.random() * 0.2}) rotate(10deg); }
+            100% { transform: scale(${0.8 + Math.random() * 0.3}) rotate(15deg); }
           }
-          @keyframes float-2 {
-            0% { transform: scale(0) translate(0, 0); }
-            100% { transform: scale(0.7) translate(20px, 50px); }
+          @keyframes pop-2 {
+            0% { transform: scale(0) rotate(0deg); }
+            60% { transform: scale(${1.2 + Math.random() * 0.1}) rotate(-15deg); }
+            100% { transform: scale(${0.9 + Math.random() * 0.2}) rotate(-20deg); }
           }
-          @keyframes float-3 {
-            0% { transform: scale(0) translate(0, 0); }
-            100% { transform: scale(0.5) translate(-10px, 60px); }
+          @keyframes pop-3 {
+            0% { transform: scale(0) rotate(0deg); }
+            50% { transform: scale(${1.0 + Math.random() * 0.2}) rotate(20deg); }
+            100% { transform: scale(${0.75 + Math.random() * 0.25}) rotate(25deg); }
           }
-          @keyframes float-4 {
-            0% { transform: scale(0) translate(0, 0); }
-            100% { transform: scale(0.6) translate(10px, 45px); }
+          @keyframes pop-4 {
+            0% { transform: scale(0) rotate(0deg); }
+            60% { transform: scale(${1.1 + Math.random() * 0.2}) rotate(-10deg); }
+            100% { transform: scale(${0.85 + Math.random() * 0.15}) rotate(-15deg); }
+          }
+          @keyframes pop-5 {
+            0% { transform: scale(0) rotate(0deg); }
+            50% { transform: scale(${1.15 + Math.random() * 0.15}) rotate(5deg); }
+            100% { transform: scale(${0.9 + Math.random() * 0.2}) rotate(10deg); }
           }
         `}</style>
       )}
