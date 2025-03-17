@@ -417,7 +417,7 @@ export default function Home() {
     // Reset select to default option after navigation
     // Use setTimeout to allow the option to be visibly selected first
     setTimeout(() => {
-      e.target.value = '';
+      e.target.value = 'get-in-touch';
       
       // Force re-render of select to clear any system-level selection state
       const parent = e.target.parentElement;
@@ -428,10 +428,9 @@ export default function Home() {
       }
     }, 300);
     
-    // For iOS, try to blur the select to remove focus
+    // For mobile devices, immediately blur to hide dropdown
     if (isMobile) {
       try {
-        // @ts-ignore - blur is standard but TypeScript might complain
         e.target.blur();
       } catch (err) {
         console.log('Failed to blur select element');
@@ -551,7 +550,19 @@ export default function Home() {
           select.contact-select option:first-child {
             display: none;
           }
-
+          
+          /* Make sure options are properly styled */
+          select.contact-select option {
+            font-weight: normal;
+            color: #333;
+            background-color: white;
+          }
+          
+          /* Special styling for the get-in-touch option */
+          select.contact-select option[value="get-in-touch"] {
+            display: none;
+          }
+          
           /* Hide checkmarks in Firefox */
           @-moz-document url-prefix() {
             select.contact-select option:checked {
@@ -622,7 +633,7 @@ export default function Home() {
               <option value="get-in-touch" disabled hidden>Contact</option>
               <optgroup label="" style={{ display: 'none' }}></optgroup>
               <option value="email">Email</option>
-              <option value="twitter">@0xago</option>
+              <option value="twitter">Twitter</option>
             </select>
           </div>
         </div>
