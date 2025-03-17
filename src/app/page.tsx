@@ -539,82 +539,76 @@ export default function Home() {
       // Direct email link for both mobile and desktop - same tab
       window.location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      // For Twitter - open in new tab on both mobile and desktop
-      if (isMobile) {
-        // Try to open in app first (using twitter:// URI scheme), then fall back to web in new tab
-        try {
-          // For iOS/Android devices that have Twitter app installed, attempt to open the app
-          const twitterAppUrl = `twitter://user?screen_name=0xago`;
-          const webUrl = 'https://twitter.com/0xago';
-          
-          // First try to open in a new tab/window (works on most mobile browsers)
-          const newTab = window.open(webUrl, '_blank');
-          
-          // If new tab/window was blocked or not opened, try direct navigation
-          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-            window.location.href = webUrl;
-          }
-        } catch (err) {
-          console.error('Failed to open Twitter', err);
-          // Fallback to regular URL in same tab as last resort
-          window.location.href = 'https://twitter.com/0xago';
+      // For Twitter - reliable new tab opening technique for all devices
+      try {
+        // Create an anchor element with proper attributes for new tab
+        const a = document.createElement('a');
+        a.href = 'https://twitter.com/0xago';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        
+        // Special handling for iOS devices which may handle _blank differently
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+          // On iOS, we need additional attributes for reliable new tab behavior
+          a.setAttribute('data-popup', 'true');
+          a.dataset.url = a.href; // Backup the URL in a dataset
         }
-      } else {
-        // Desktop: Use the existing new tab approach
-        try {
-          const a = document.createElement('a');
-          a.href = 'https://twitter.com/0xago';
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            document.body.removeChild(a);
-          }, 100);
-        } catch (err) {
-          console.error('Failed to open Twitter in new tab', err);
-          // Fallback to direct navigation if the preferred method fails
+        
+        // Hide element but keep it functional
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        
+        // Use click event for most web standards compliant behavior
+        a.click();
+        
+        // Clean up DOM
+        setTimeout(() => {
+          document.body.removeChild(a);
+        }, 100);
+      } catch (err) {
+        console.error('Failed to open Twitter in new tab', err);
+        // Fallback to the most compatible approach - window.open
+        window.open('https://twitter.com/0xago', '_blank');
+        
+        // Ultimate fallback if everything else fails
+        if (!window.open) {
           window.location.href = 'https://twitter.com/0xago';
         }
       }
     } else if (value === 'linkedin') {
-      // For LinkedIn - open in new tab on both mobile and desktop
-      if (isMobile) {
-        // Try to open in app first (using linkedin:// URI scheme), then fall back to web in new tab
-        try {
-          // For iOS/Android devices that have LinkedIn app installed, attempt to open the app
-          const linkedinAppUrl = `linkedin://profile/eriknson`;
-          const webUrl = 'https://www.linkedin.com/in/eriknson/';
-          
-          // First try to open in a new tab/window (works on most mobile browsers)
-          const newTab = window.open(webUrl, '_blank');
-          
-          // If new tab/window was blocked or not opened, try direct navigation
-          if (!newTab || newTab.closed || typeof newTab.closed === 'undefined') {
-            window.location.href = webUrl;
-          }
-        } catch (err) {
-          console.error('Failed to open LinkedIn', err);
-          // Fallback to regular URL in same tab as last resort
-          window.location.href = 'https://www.linkedin.com/in/eriknson/';
+      // For LinkedIn - reliable new tab opening technique for all devices
+      try {
+        // Create an anchor element with proper attributes for new tab
+        const a = document.createElement('a');
+        a.href = 'https://www.linkedin.com/in/eriknson/';
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        
+        // Special handling for iOS devices which may handle _blank differently
+        if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream) {
+          // On iOS, we need additional attributes for reliable new tab behavior
+          a.setAttribute('data-popup', 'true');
+          a.dataset.url = a.href; // Backup the URL in a dataset
         }
-      } else {
-        // Desktop: Use the existing new tab approach
-        try {
-          const a = document.createElement('a');
-          a.href = 'https://www.linkedin.com/in/eriknson/';
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.style.display = 'none';
-          document.body.appendChild(a);
-          a.click();
-          setTimeout(() => {
-            document.body.removeChild(a);
-          }, 100);
-        } catch (err) {
-          console.error('Failed to open LinkedIn in new tab', err);
-          // Fallback to direct navigation if the preferred method fails
+        
+        // Hide element but keep it functional
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        
+        // Use click event for most web standards compliant behavior
+        a.click();
+        
+        // Clean up DOM
+        setTimeout(() => {
+          document.body.removeChild(a);
+        }, 100);
+      } catch (err) {
+        console.error('Failed to open LinkedIn in new tab', err);
+        // Fallback to the most compatible approach - window.open
+        window.open('https://www.linkedin.com/in/eriknson/', '_blank');
+        
+        // Ultimate fallback if everything else fails
+        if (!window.open) {
           window.location.href = 'https://www.linkedin.com/in/eriknson/';
         }
       }
