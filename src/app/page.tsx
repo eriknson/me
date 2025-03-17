@@ -420,19 +420,19 @@ export default function Home() {
             top: `${cursorPosition.y}px`,
             fontSize: '40px', // Larger size for more prominence
             filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))', // Enhanced glow
-            animation: 'prayPulse 0.6s infinite', // Faster, more dynamic pulse
+            animation: 'sunPulse 0.6s infinite', // Faster, more dynamic pulse
             willChange: 'transform, left, top',
           }}
         >
-          🙏
+          🌞
         </div>
       )}
 
       <style jsx global>{`
-        @keyframes prayPulse {
-          0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
-          50% { transform: translate(-50%, -50%) scale(1.2); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
-          100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+        @keyframes sunPulse {
+          0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+          50% { transform: translate(-50%, -50%) scale(1.2) rotate(180deg); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
+          100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
         }
       `}</style>
 
