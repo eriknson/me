@@ -539,11 +539,21 @@ export default function Home() {
       // Direct email link for both mobile and desktop - same tab
       window.location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      // Simple and reliable approach - works on all devices
-      window.open('https://twitter.com/0xago', '_blank', 'noopener');
+      if (isMobile) {
+        // Direct navigation on mobile - guaranteed to work
+        window.location.href = 'https://twitter.com/0xago';
+      } else {
+        // New tab on desktop
+        window.open('https://twitter.com/0xago', '_blank');
+      }
     } else if (value === 'linkedin') {
-      // Simple and reliable approach - works on all devices
-      window.open('https://www.linkedin.com/in/eriknson/', '_blank', 'noopener');
+      if (isMobile) {
+        // Direct navigation on mobile - guaranteed to work
+        window.location.href = 'https://www.linkedin.com/in/eriknson/';
+      } else {
+        // New tab on desktop
+        window.open('https://www.linkedin.com/in/eriknson/', '_blank');
+      }
     }
     
     // Ensure select is blurred on mobile to close it properly
