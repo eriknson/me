@@ -37,7 +37,7 @@ export default function Home() {
   const cursorRef = useRef<HTMLDivElement>(null)
   
   // Maximum number of hearts to allow on screen for performance
-  const MAX_HEARTS = isMobile ? 40 : 75; // Reduced for better performance
+  const MAX_HEARTS = isMobile ? 25 : 50; // Significantly reduced for better performance
   
   // Initial pre-populated pool size
   const INITIAL_POOL_SIZE = 20;
@@ -195,6 +195,15 @@ export default function Home() {
     // Filter and update hearts in one pass for better performance
     const updatedHearts: Heart[] = [];
     
+    // Update every other frame on mobile for better performance
+    if (isMobile && now % 2 === 0) {
+      heartsRef.current.forEach(heart => {
+        updatedHearts.push(heart);
+      });
+      rafRef.current = requestAnimationFrame(updateHearts);
+      return;
+    }
+    
     for (const heart of heartsRef.current) {
       // Check age
       const age = now - heart.created;
@@ -272,8 +281,8 @@ export default function Home() {
   // Spawn hearts at position with throttling
   const spawnHearts = (x: number, y: number) => {
     const now = Date.now();
-    // Throttle spawning on mobile to prevent performance issues
-    const spawnThrottle = isMobile ? 60 : 40; // Faster spawn rate on mobile
+    // Throttle spawning for better performance
+    const spawnThrottle = isMobile ? 100 : 60; // Increased throttle to reduce spawn rate
     
     if (now - lastSpawnTimeRef.current < spawnThrottle) {
       return;
@@ -283,10 +292,10 @@ export default function Home() {
     
     // Limit total hearts for performance
     if (heartsRef.current.length >= MAX_HEARTS) {
-      // Remove oldest hearts when at limit
+      // Remove oldest hearts when at limit (more aggressively)
       const toRemove = Math.min(
-        heartsRef.current.length + (isMobile ? 5 : 5) - MAX_HEARTS,
-        10 // Cap removal to avoid performance hit from bulk removal
+        Math.max(heartsRef.current.length - MAX_HEARTS + (isMobile ? 3 : 5), 0), 
+        isMobile ? 5 : 10
       );
       
       for (let i = 0; i < toRemove; i++) {
@@ -297,8 +306,8 @@ export default function Home() {
       }
     }
     
-    // Spawn slightly more hearts on mobile for more dynamic feel
-    const count = isMobile ? 4 : 5;
+    // Spawn fewer hearts for better performance, especially on mobile
+    const count = isMobile ? 2 : 3; // Reduced count significantly
     
     // Use staggered creation instead of all at once
     staggeredHeartCreation(x, y, count);
