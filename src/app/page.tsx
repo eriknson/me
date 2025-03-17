@@ -415,7 +415,20 @@ export default function Home() {
     }
     
     // Reset select to default option after navigation
-    e.target.value = '';
+    // Use setTimeout to allow the option to be visibly selected first
+    setTimeout(() => {
+      e.target.value = '';
+    }, 300);
+    
+    // For iOS, try to blur the select to remove focus
+    if (isMobile) {
+      try {
+        // @ts-ignore - blur is standard but TypeScript might complain
+        e.target.blur();
+      } catch (err) {
+        console.log('Failed to blur select element');
+      }
+    }
   };
 
   // P3 color space vibrant blue with fallback
@@ -472,6 +485,7 @@ export default function Home() {
             text-align-last: center;
             -moz-text-align-last: center;
             color: white;
+            -webkit-tap-highlight-color: transparent; /* Removes tap highlight on iOS */
           }
           
           /* Style select options - note that this only works in some browsers */
@@ -479,6 +493,15 @@ export default function Home() {
             background-color: white;
             color: #333;
             text-align: left;
+            padding: 8px;
+            font-size: 14px;
+          }
+          
+          /* Fix for iOS specific issues */
+          @supports (-webkit-touch-callout: none) {
+            select.contact-select {
+              font-size: 16px; /* Prevent auto-zoom on focus */
+            }
           }
         `}</style>
 
@@ -508,13 +531,11 @@ export default function Home() {
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 background: p3Blue,
                 backgroundColor: fallbackBlue,
-                backgroundImage: `url('data:image/svg+xml;utf8,<svg fill="white" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>')`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 12px center',
-                paddingRight: '36px',
+                backgroundImage: 'none', // Remove the dropdown arrow
                 WebkitAppearance: 'none',
                 MozAppearance: 'none',
-                textIndent: '1px',
+                appearance: 'none', // Standard property for newer browsers
+                textIndent: '0',
                 textOverflow: 'ellipsis',
               }}
               aria-label="Contact options"
@@ -524,6 +545,22 @@ export default function Home() {
               <option value="email">Email</option>
               <option value="twitter">Twitter</option>
             </select>
+
+            {/* Style for better mobile handling */}
+            <style jsx>{`
+              select {
+                min-width: 120px;
+              }
+              
+              @media (max-width: 768px) {
+                select {
+                  font-size: 16px; /* Prevents iOS zoom on focus */
+                  min-width: 110px;
+                  padding-left: 16px;
+                  padding-right: 16px;
+                }
+              }
+            `}</style>
           </div>
         </div>
       </main>
