@@ -173,8 +173,8 @@ export default function Home() {
     <main className="relative min-h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]">
       <h1
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2
-                   text-4xl md:text-6xl font-medium pointer-events-none z-40
-                   text-[#e5e5e5] dark:text-[#333333]"
+                   text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
+                   text-[#e5e5e5] dark:text-[#333333] text-center w-full px-4"
         style={{
           fontFamily: 'SF Pro Rounded, system-ui, sans-serif'
         }}
@@ -183,14 +183,15 @@ export default function Home() {
       </h1>
 
       {/* Completely rebuilt contact button with simpler styling */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center items-center z-[100]">
+      <div className="absolute bottom-10 left-0 right-0 flex justify-center items-center z-[100]">
         <a
           href="mailto:contact@eriks.design"
-          className="px-5 py-2 rounded-full text-sm font-medium
+          className="px-6 py-3 md:px-5 md:py-2 rounded-full text-base md:text-sm font-medium
                     bg-[#007AFF] text-white 
                     hover:bg-[#0071F4] hover:scale-105
                     active:bg-[#0058CC] active:scale-95
-                    cursor-pointer transition-all duration-200"
+                    cursor-pointer transition-all duration-200
+                    touch-manipulation"
           style={{ fontFamily: 'SF Pro Rounded, system-ui, sans-serif' }}
         >
           Contact
