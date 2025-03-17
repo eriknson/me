@@ -417,37 +417,45 @@ export default function Home() {
     };
   }, [isMobile]);
 
-  // Handle redirect for contact options
-  const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
+  // Handle redirect for contact options with enhanced mobile support
+  const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement> | Event) => {
+    // Get the select element - handle both event types
+    const select = e.target as HTMLSelectElement;
+    const value = select.value;
+    
     if (value === 'email') {
-      window.location.href = 'mailto:contact@eriks.design';
+      // Use direct method for navigating to email
+      window.open('mailto:contact@eriks.design', '_self');
     } else if (value === 'twitter') {
+      // Open Twitter in a new tab
       window.open('https://twitter.com/0xago', '_blank');
     }
     
-    // Reset select to default option after navigation
-    // Use setTimeout to allow the option to be visibly selected first
+    // Reset select to default option immediately to keep "Contact" visible
+    // On all devices, this ensures the button always shows "Contact"
     setTimeout(() => {
-      e.target.value = 'get-in-touch';
+      select.value = 'get-in-touch';
       
-      // Force re-render of select to clear any system-level selection state
-      const parent = e.target.parentElement;
-      if (parent) {
-        const select = e.target;
-        parent.removeChild(select);
-        parent.appendChild(select);
+      // On mobile, also blur to hide the dropdown
+      if (isMobile) {
+        try {
+          select.blur();
+        } catch (err) {
+          console.log('Failed to blur select element');
+        }
       }
-    }, 300);
-    
-    // For mobile devices, immediately blur to hide dropdown
-    if (isMobile) {
-      try {
-        e.target.blur();
-      } catch (err) {
-        console.log('Failed to blur select element');
-      }
-    }
+    }, 50); // Even shorter timeout for better responsiveness
+  };
+  
+  // Direct URL handlers for more reliable mobile navigation
+  const handleEmailClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.open('mailto:contact@eriks.design', '_self');
+  };
+  
+  const handleTwitterClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.open('https://twitter.com/0xago', '_blank');
   };
 
   // P3 color space vibrant blue with fallback
@@ -525,49 +533,60 @@ export default function Home() {
             background-color: white;
             color: #333;
             text-align: left;
-            padding: 8px;
+            padding: 12px 15px;
             font-size: 14px;
             /* Remove option checkmark on Webkit browsers */
             -webkit-appearance: none;
           }
           
-          /* Chrome-specific fixes */
-          select.contact-select option:checked {
-            background-color: white !important;
-            color: #333 !important;
-            box-shadow: none !important;
-            background-image: none !important;
+          /* Force first option to be shown in dropdown but not as selection */
+          select.contact-select option[value="contact-header"] {
+            color: #666;
+            font-style: italic;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
           }
           
-          /* Super aggressive Chrome for Mac specific fix */
-          @media screen and (-webkit-min-device-pixel-ratio: 0) {
-            select.contact-select option::before,
-            select.contact-select option::after {
-              display: none !important;
-              content: none !important;
+          /* Style real options */
+          select.contact-select option[value="email"],
+          select.contact-select option[value="twitter"] {
+            font-weight: normal;
+            padding: 12px 15px;
+          }
+          
+          /* Remove all dropdown arrows completely */
+          select.contact-select {
+            background-image: none !important;
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            text-align: center;
+            text-align-last: center;
+            -moz-text-align-last: center;
+            color: white;
+            -webkit-tap-highlight-color: transparent; 
+            transform: translateZ(0);
+          }
+          
+          /* Remove arrow in IE */
+          select.contact-select::-ms-expand {
+            display: none;
+          }
+          
+          /* Remove arrow in Firefox */
+          @-moz-document url-prefix() {
+            select.contact-select {
+              text-indent: 0;
+              text-overflow: '';
+              padding-right: 6px;
             }
-            
-            select.contact-select option {
-              background-color: white !important;
-              appearance: none !important;
-              -webkit-appearance: none !important;
-              background-image: none !important;
-            }
-            
-            select.contact-select option:checked,
-            select.contact-select option:hover {
-              background-color: rgba(0, 0, 0, 0.05) !important;
-              background-image: none !important;
-              -webkit-background-image: none !important;
-              color: #333 !important;
-              box-shadow: none !important;
-              -webkit-box-shadow: none !important;
-            }
-            
-            /* Force reflow of options to clear previous styling */
-            select.contact-select:focus option {
-              transform: translateZ(0);
-            }
+          }
+          
+          /* Remove select wrapper arrow on iOS */
+          .select-wrapper::after {
+            display: none !important;
+            content: none !important;
           }
           
           /* Style to hide the first option */
@@ -643,6 +662,12 @@ export default function Home() {
         </h1>
 
         <div className="absolute bottom-[10vh] left-0 right-0 flex justify-center items-center z-[100]">
+          {/* Fallback links for better mobile experience */}
+          <div className="hidden">
+            <a href="mailto:contact@eriks.design" id="email-fallback">Email</a>
+            <a href="https://twitter.com/0xago" id="twitter-fallback" target="_blank" rel="noopener noreferrer">Twitter</a>
+          </div>
+          
           <div className="relative select-wrapper">
             <select
               onChange={handleContactOptionChange}
@@ -657,16 +682,21 @@ export default function Home() {
                 fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Rounded", "SF Pro", "Helvetica Neue", Helvetica, Arial, sans-serif',
                 background: p3Blue,
                 backgroundColor: fallbackBlue,
-                backgroundImage: 'none', // Remove the dropdown arrow
+                backgroundImage: 'none', // Remove the dropdown arrow completely
                 WebkitAppearance: 'none',
                 MozAppearance: 'none',
-                appearance: 'none', // Standard property for newer browsers
+                appearance: 'none',
+                paddingRight: '8px', // Equal padding on both sides
+                paddingLeft: '8px',
                 textIndent: '0',
                 textOverflow: 'ellipsis',
                 ...(isMobile ? { 
                   fontSize: '16px', // Prevent zoom on iOS
                   touchAction: 'manipulation',
                   userSelect: 'none',
+                  // Additional mobile-specific styles
+                  fontWeight: 600,
+                  minHeight: '44px',
                 } : {}),
               }}
               aria-label="Contact options"
@@ -674,19 +704,49 @@ export default function Home() {
               onClick={(e) => {
                 // On mobile, ensure the select opens properly on tap
                 if (isMobile) {
-                  // This helps trigger native select UI on iOS
-                  (e.target as HTMLSelectElement).focus();
+                  try {
+                    // This helps trigger native select UI on iOS
+                    (e.target as HTMLSelectElement).focus();
+                  } catch (err) {
+                    console.log('Failed to focus select');
+                  }
                 }
               }}
-              // Add touch events for better mobile handling
+              // Add more reliable touch events for mobile
               onTouchStart={(e) => {
                 if (isMobile) {
-                  e.currentTarget.focus();
+                  try {
+                    e.currentTarget.focus();
+                  } catch (err) {
+                    console.log('Touch focus failed');
+                  }
+                }
+              }}
+              // Fix iOS focus issues
+              onFocus={(e) => {
+                if (isMobile) {
+                  // Force iOS to show dropdown
+                  e.currentTarget.size = 4;
+                }
+              }}
+              onBlur={(e) => {
+                if (isMobile) {
+                  // Reset size when dropdown closes
+                  e.currentTarget.size = 1;
+                  // Ensure the label is always "Contact"
+                  e.currentTarget.value = 'get-in-touch';
                 }
               }}
             >
+              {/* Always start with the Contact option as disabled */}
               <option value="get-in-touch" disabled hidden>Contact</option>
+              
+              {/* Add a disabled "Contact" option at the top of the actual dropdown */}
+              <option value="contact-header" disabled>Contact</option>
+              
+              {/* Hide the optgroup but keep it for Chrome styling fixes */}
               <optgroup label="" style={{ display: 'none' }}></optgroup>
+              
               <option value="email">Email</option>
               <option value="twitter">Twitter</option>
             </select>
