@@ -18,6 +18,9 @@ interface Heart {
   created: number
 }
 
+// Cursor states
+type CursorState = 'default' | 'pointer' | 'active'
+
 export default function Home() {
   const [isMobile, setIsMobile] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -26,6 +29,11 @@ export default function Home() {
   const rafRef = useRef<number>()
   const isActiveRef = useRef(false)
   const lastSpawnTimeRef = useRef(0)
+  
+  // Cursor state management
+  const [cursorPosition, setCursorPosition] = useState({ x: -100, y: -100 }) // Start off-screen
+  const [cursorState, setCursorState] = useState<CursorState>('default')
+  const cursorRef = useRef<HTMLDivElement>(null)
   
   // Maximum number of hearts to allow on screen for performance
   const MAX_HEARTS = isMobile ? 40 : 75; // Reduced for better performance
@@ -50,6 +58,36 @@ export default function Home() {
       window.removeEventListener('resize', checkMobile);
     };
   }, []);
+
+  // Custom cursor implementation - only for non-mobile
+  useEffect(() => {
+    if (isMobile) return; // Don't implement custom cursor on mobile devices
+    
+    const updateCursorPosition = (e: MouseEvent) => {
+      setCursorPosition({ x: e.clientX, y: e.clientY });
+    };
+    
+    const handleMouseDown = () => {
+      setCursorState('active');
+    };
+    
+    const handleMouseUp = () => {
+      setCursorState('default');
+    };
+    
+    // Add mouse event listeners
+    window.addEventListener('mousemove', updateCursorPosition);
+    window.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mouseup', handleMouseUp);
+    window.addEventListener('mouseleave', handleMouseUp);
+    
+    return () => {
+      window.removeEventListener('mousemove', updateCursorPosition);
+      window.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('mouseleave', handleMouseUp);
+    };
+  }, [isMobile]);
 
   // Element pool for better performance - reuse elements instead of creating new ones
   const elementsPoolRef = useRef<HTMLDivElement[]>([]);
@@ -365,9 +403,39 @@ export default function Home() {
     <main 
       ref={containerRef}
       className="relative h-screen w-full overflow-hidden bg-[#F8F8FA] dark:bg-[#111111]" 
-      style={{ height: 'calc(var(--vh, 1vh) * 100)' }}
+      style={{ 
+        height: 'calc(var(--vh, 1vh) * 100)',
+        // Use default cursor normally
+        cursor: 'auto'
+      }}
       aria-label="Coming soon page with interactive heart animations"
     >
+      {/* Custom prayer hands cursor only shows when active */}
+      {!isMobile && cursorState === 'active' && (
+        <div 
+          ref={cursorRef}
+          className="fixed pointer-events-none z-[1000] transform -translate-x-1/2 -translate-y-1/2 flex items-center justify-center"
+          style={{
+            left: `${cursorPosition.x}px`,
+            top: `${cursorPosition.y}px`,
+            fontSize: '40px', // Larger size for more prominence
+            filter: 'drop-shadow(0 0 8px rgba(255,255,255,0.7))', // Enhanced glow
+            animation: 'prayPulse 0.6s infinite', // Faster, more dynamic pulse
+            willChange: 'transform, left, top',
+          }}
+        >
+          🙏
+        </div>
+      )}
+
+      <style jsx global>{`
+        @keyframes prayPulse {
+          0% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+          50% { transform: translate(-50%, -50%) scale(1.2); filter: drop-shadow(0 0 15px rgba(255,215,0,0.8)); }
+          100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 5px rgba(255,215,0,0.5)); }
+        }
+      `}</style>
+
       <h1
         className="absolute left-1/2 top-[40%] -translate-x-1/2 -translate-y-1/2
                    text-5xl md:text-6xl lg:text-7xl font-medium pointer-events-none z-40
