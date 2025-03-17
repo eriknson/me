@@ -434,17 +434,31 @@ export default function Home() {
       // Use location.href for more reliable email navigation
       location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      // For Twitter, use a direct window.location approach for mobile
-      if (isMobile) {
-        // Force navigation to new window on mobile
-        const newWindow = window.open('https://twitter.com/0xago', '_blank');
-        // Fallback if window.open is blocked
-        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      // Always try to open in new tab first for both desktop and mobile
+      const newWindow = window.open('https://twitter.com/0xago', '_blank', 'noopener,noreferrer');
+      
+      // Fallback if window.open is blocked or fails
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        // On mobile, redirect in same tab as fallback
+        if (isMobile) {
           window.location.href = 'https://twitter.com/0xago';
+        } else {
+          // On desktop, try one more time with location.href and target _blank
+          try {
+            // Create a temporary anchor and simulate click
+            const a = document.createElement('a');
+            a.href = 'https://twitter.com/0xago';
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (err) {
+            // Last resort fallback
+            window.location.href = 'https://twitter.com/0xago';
+          }
         }
-      } else {
-        // Desktop can use standard approach
-        window.open('https://twitter.com/0xago', '_blank');
       }
     }
     
@@ -644,7 +658,7 @@ export default function Home() {
               }}
             >
               {/* Contact option - always selected but hidden in dropdown */}
-              <option value="contact" disabled>Contact</option>
+              <option value="contact" disabled>Get in touch</option>
               
               {/* Real options */}
               <option value="email">Email</option>
