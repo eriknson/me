@@ -409,9 +409,9 @@ export default function Home() {
   const handleContactOptionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (value === 'email') {
-      window.open('mailto:contact@eriks.design', '_blank');
+      window.location.href = 'mailto:contact@eriks.design';
     } else if (value === 'twitter') {
-      window.open('https://twitter.com/vibes', '_blank');
+      window.open('https://twitter.com/0xago', '_blank');
     }
     
     // Reset select to default option after navigation
@@ -496,11 +496,22 @@ export default function Home() {
             text-align: left;
             padding: 8px;
             font-size: 14px;
+            /* Remove option checkmark on Webkit browsers */
+            -webkit-appearance: none;
           }
           
           /* Style to hide the first option */
           select.contact-select option:first-child {
             display: none;
+          }
+
+          /* Hide checkmarks in Firefox */
+          @-moz-document url-prefix() {
+            select.contact-select option:checked {
+              background-color: white !important;
+              color: #333 !important;
+              box-shadow: none !important;
+            }
           }
           
           /* Fix for iOS specific issues */
@@ -563,7 +574,7 @@ export default function Home() {
             >
               <option value="" disabled hidden>Contact</option>
               <option value="email">Email</option>
-              <option value="twitter">Twitter</option>
+              <option value="twitter">@0xago</option>
             </select>
           </div>
         </div>
